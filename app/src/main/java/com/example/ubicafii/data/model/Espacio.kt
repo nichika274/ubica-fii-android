@@ -9,4 +9,5 @@ data class Espacio(
     val fotoUrl: String,
     val indicaciones: String,
     val bloque: String
+
 )
