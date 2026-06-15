@@ -57,6 +57,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val espacios by viewModel.espacios.collectAsState()
     val error by viewModel.error.collectAsState()
+    val cargando by viewModel.cargando.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.cargarEspacios()
@@ -120,20 +121,20 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // --- SOLUCIÓN 1: Barra de búsqueda circular usando OutlinedTextField simulado ---
+                    // Barra de búsqueda circular usando OutlinedTextField simulado
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null // Elimina el parpadeo gris cuadrado al tocar
+                                indication = null
                             ) { onNavigateToSearch() }
                     ) {
                         OutlinedTextField(
                             value = "",
                             onValueChange = {},
                             readOnly = true,
-                            enabled = false, // Evita que gane foco o levante el teclado
+                            enabled = false,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
@@ -278,7 +279,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable { onNavigateToBlocks(bloque.id) },
-                                shape = RoundedCornerShape(24.dp), // Cambiado a 24.dp para consistencia visual
+                                shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = Surface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
@@ -325,32 +326,54 @@ fun HomeScreen(
             }
         }
 
-        // --- DIÁLOGO DE ALERTA DE ERROR ---
+        // INDICADOR DE CARGA
+        if (cargando) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                color = BluePrimary,
+                trackColor = Color.Transparent
+            )
+        }
+
+        // --- BANNER DE ERROR EN UN SNACKBAR INFERIOR FLOATING RECONFIGURADO ---
         error?.let { mensajeError ->
-            AlertDialog(
-                onDismissRequest = { /* Bloquear clics externos */ },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Error de Conexión")
-                    }
-                },
-                text = {
-                    Text("No se pudieron cargar los datos del campus.\nDetalle: $mensajeError\n\nPor favor, verifica que tu backend Node.js esté corriendo correctamente.")
-                },
-                confirmButton = {
+            Snackbar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 76.dp), // Ajustado el margen inferior para no tapar barras de navegación si usas scaffold
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                action = {
                     TextButton(
                         onClick = { viewModel.cargarEspacios() }
                     ) {
-                        Text("Reintentar", fontWeight = FontWeight.Bold, color = BluePrimary)
+                        Text(
+                            "Reintentar",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
-            )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = mensajeError,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 }
@@ -361,7 +384,7 @@ fun TarjetaEspacioFrecuente(espacio: Espacio, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp), // Cambiado a 24.dp para consistencia visual
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

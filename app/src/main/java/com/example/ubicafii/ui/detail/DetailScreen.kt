@@ -2,7 +2,9 @@ package com.example.ubicafii.ui.detail
 
 import android.content.Intent
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -11,21 +13,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.ubicafii.R
 import com.example.ubicafii.ui.theme.*
 import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
+import java.io.File
 
 @Composable
 fun DetailScreen(
@@ -38,81 +49,126 @@ fun DetailScreen(
     val context = LocalContext.current
     var copiado by remember { mutableStateOf(false) }
 
+    var showPlanoDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(espacioId) {
         viewModel.cargarEspacio(espacioId)
     }
 
     if (cargando) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = BluePrimary)
         }
         return
     }
 
     val esp = espacio ?: return
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Hero image
+    val planoResource = when (esp.piso.toString()) {
+        "Sótano" -> R.drawable.plano_piso1
+        "1" -> R.drawable.plano_piso1
+        "2" -> R.drawable.plano_piso1
+        "3" -> R.drawable.plano_piso1
+        else -> R.drawable.plano_piso1
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Imagen Principal (Hero Image)
         Box(modifier = Modifier.fillMaxWidth().height(240.dp)) {
+            val imageModel = if (esp.fotoUrl.startsWith("/")) {
+                File(esp.fotoUrl)
+            } else {
+                esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
+            }
+
             AsyncImage(
-                model = esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" },
+                model = imageModel,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
             Box(
-                modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.38f), Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.22f))
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.38f),
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.22f)
+                            )
+                        )
                     )
-                )
             )
-            // Botones superiores
+
+            // Botones Flotantes Superiores
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 48.dp, start = 16.dp, end = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, start = 16.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(20.dp))
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White.copy(alpha = 0.92f), CircleShape)
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.DarkGray)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.DarkGray)
                 }
                 IconButton(
                     onClick = {
                         copiado = true
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "Mira este espacio: ${esp.nombre} - UbicaFII")
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "Mira este espacio en UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n\nAbri en la App: ubicafii://espacio?id=${esp.id}"
+                            )
                             type = "text/plain"
                         }
                         context.startActivity(Intent.createChooser(sendIntent, "Compartir"))
                     },
-                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(20.dp))
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White.copy(alpha = 0.92f), CircleShape)
                 ) {
-                    Icon(if (copiado) Icons.Default.CheckCircle else Icons.Default.Share, contentDescription = null, tint = if (copiado) Color(0xFF2E7D32) else Color.DarkGray)
+                    Icon(
+                        imageVector = if (copiado) Icons.Default.CheckCircle else Icons.Default.Share,
+                        contentDescription = "Compartir",
+                        tint = if (copiado) Color(0xFF2E7D32) else Color.DarkGray
+                    )
                 }
             }
-            // Badge tipo
+
+            // Badge del Tipo de Espacio
             Box(
-                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
-                    .background(getTypeBgColor(esp.tipo), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .background(getTypeBgColor(esp.tipo), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(getTypeIcon(esp.tipo), contentDescription = null, modifier = Modifier.size(13.dp), tint = getTypeColor(esp.tipo))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(esp.tipo, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = getTypeColor(esp.tipo))
                 }
             }
         }
 
-        // Contenido
+        // Contenido Informativo
         Column(modifier = Modifier.padding(16.dp)) {
-            // Info card
+
+            // Tarjeta de Información General
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -121,9 +177,10 @@ fun DetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = BluePrimary)
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Bloque ${esp.bloque} · Piso ${esp.piso}", fontSize = 13.sp, color = MutedForeground)
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.background(BlueLight, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
                         Text(esp.id.toString(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = BluePrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                     }
@@ -134,10 +191,10 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Cómo llegar
+            // Cómo llegar (Tarjeta con Miniatura de Plano Ajustada por Aspect Ratio)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -149,38 +206,113 @@ fun DetailScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(esp.indicaciones, fontSize = 13.sp, color = MutedForeground, lineHeight = 20.sp)
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Plano simplificado (canvas)
-                    FloorPlanMini(floor = esp.piso.toString(), blockId = esp.bloque)
+                    // MINI MAPA ESTÁTICO: Evita deformaciones calculando el tamaño real de la imagen en ContentScale.Fit
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFFE8EDF2))
+                    ) {
+                        val density = LocalDensity.current
+                        val containerWidthPx = with(density) { maxWidth.toPx() }
+                        val containerHeightPx = with(density) { maxHeight.toPx() }
+
+                        // Obtenemos las dimensiones de la imagen original (Ej: plano_piso1 es 1195x896)
+                        val imagePainter = painterResource(id = planoResource)
+                        val imageOriginalWidth = imagePainter.intrinsicSize.width
+                        val imageOriginalHeight = imagePainter.intrinsicSize.height
+
+                        val imageAspect = imageOriginalWidth / imageOriginalHeight
+                        val containerAspect = containerWidthPx / containerHeightPx
+
+                        // Calculamos cuánto mide la imagen real renderizada en pantalla dentro del ContentScale.Fit
+                        val drawnWidth = if (containerAspect > imageAspect) {
+                            containerHeightPx * imageAspect
+                        } else {
+                            containerWidthPx
+                        }
+
+                        val drawnHeight = if (containerAspect > imageAspect) {
+                            containerHeightPx
+                        } else {
+                            containerWidthPx / imageAspect
+                        }
+
+                        // Calculamos los offsets de los bordes vacíos generados para centrar el mapa
+                        val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
+                        val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
+
+                        Image(
+                            painter = imagePainter,
+                            contentDescription = "Plano del piso",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        // Dibujamos el marcador aplicando el desfase del centrado de imagen y su propio radio (12.dp = 24.dp / 2)
+                        val markerRadiusPx = with(density) { 12.dp.toPx() }
+                        val markerX = fitOffsetX + (esp.coordenadaX * drawnWidth) - markerRadiusPx
+                        val markerY = fitOffsetY + (esp.coordenadaY * drawnHeight) - markerRadiusPx
+
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
+                                .size(24.dp)
+                                .background(BluePrimary, CircleShape)
+                                .border(3.dp, Color.White, CircleShape)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Ubicación del espacio en el plano (Piso ${esp.piso})",
+                        fontSize = 11.sp,
+                        color = MutedForeground,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones de acción
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Botones de acción inferiores
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Button(
                     onClick = {
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "UbicaFII: ${esp.nombre} - ${esp.bloque} Piso ${esp.piso}\n${esp.indicaciones}")
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\nPiso ${esp.piso} · ${esp.indicaciones}\n\nUbicación exacta: ubicafii://espacio?id=${esp.id}"
+                            )
                             type = "text/plain"
                         }
                         context.startActivity(Intent.createChooser(sendIntent, "Compartir"))
                     },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Compartir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
+
                 Button(
-                    onClick = { /* mostrar plano interactivo */ },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    onClick = { showPlanoDialog = true },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BlueLight),
                     border = BorderStroke(1.5.dp, BluePrimary)
                 ) {
@@ -191,48 +323,118 @@ fun DetailScreen(
             }
         }
     }
+
+    if (showPlanoDialog) {
+        PlanoDialog(
+            planoResource = planoResource,
+            coordenadaX = esp.coordenadaX,
+            coordenadaY = esp.coordenadaY,
+            onDismiss = { showPlanoDialog = false }
+        )
+    }
 }
 
 @Composable
-fun FloorPlanMini(floor: String, blockId: String) {
-    val floorLabel = if (floor == "Sótano") "Sótano" else "Piso $floor"
-    val posiciones = mapOf(
-        "Sótano" to Offset(40f, 137f), "1" to Offset(40f, 137f), "2" to Offset(210f, 137f),
-        "3" to Offset(150f, 137f), "4" to Offset(280f, 50f)
-    )
-    val (cx, cy) = posiciones[floor] ?: Offset(40f, 137f)
+fun PlanoDialog(
+    planoResource: Int,
+    coordenadaX: Float,
+    coordenadaY: Float,
+    onDismiss: () -> Unit
+) {
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
 
-    Box(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFFE8EDF2))
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-            // Corredor
-            drawRect(color = Color(0xFFD4DCE8), topLeft = Offset(0f, 80f), size = androidx.compose.ui.geometry.Size(size.width, 20f))
+        // VISOR COMPLETO CON ZOOM: Usamos BoxWithConstraints para saber el tamaño exacto del diálogo de forma responsiva
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.95f))
+                .pointerInput(Unit) {
+                    detectTransformGestures { centroid, pan, zoom, _ ->
+                        val oldScale = scale
+                        val newScale = (scale * zoom).coerceIn(1f, 5f)
 
-            // Salones superiores
-            listOf(10f, 80f, 150f, 220f, 280f).forEachIndexed { i, x ->
-                drawRoundRect(color = Color.White, topLeft = Offset(x, 10f), size = androidx.compose.ui.geometry.Size(if (i == 4) 30f else 60f, 65f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f))
-                drawRoundRect(color = Color(0xFFB0BEC5), topLeft = Offset(x, 10f), size = androidx.compose.ui.geometry.Size(if (i == 4) 30f else 60f, 65f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f), style = Stroke(width = 1.5f))
-            }
+                        offsetX = centroid.x - (centroid.x - offsetX) * (newScale / oldScale)
+                        offsetY = centroid.y - (centroid.y - offsetY) * (newScale / oldScale)
 
-            // Salones inferiores
-            listOf(10f, 80f, 150f, 220f, 280f).forEachIndexed { i, x ->
-                val resaltado = (cx == x && cy == 137f)
-                drawRoundRect(color = if (resaltado) BlueLight else Color.White, topLeft = Offset(x, 105f), size = androidx.compose.ui.geometry.Size(if (i == 4) 30f else 60f, 65f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f))
-                drawRoundRect(color = if (resaltado) BluePrimary else Color(0xFFB0BEC5), topLeft = Offset(x, 105f), size = androidx.compose.ui.geometry.Size(if (i == 4) 30f else 60f, 65f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f), style = Stroke(width = if (resaltado) 2f else 1.5f))
-            }
-
-            // Estrella / Marcador
-            drawCircle(color = BluePrimary, radius = 11f, center = Offset(cx, cy))
-
-            // Flecha entrada
-            drawLine(color = Color(0xFF64748B), start = Offset(160f, 175f), end = Offset(160f, 168f), strokeWidth = 1.5f)
-        }
-        Column(
-            modifier = Modifier.align(Alignment.BottomCenter).background(Color.White).padding(vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                        offsetX += pan.x
+                        offsetY += pan.y
+                        scale = newScale
+                    }
+                }
         ) {
-            Text("Ubicación del espacio en el plano ($floorLabel - $blockId)", fontSize = 11.sp, color = MutedForeground)
+            val density = LocalDensity.current
+            val dialogWidthPx = with(density) { maxWidth.toPx() }
+            val dialogHeightPx = with(density) { maxHeight.toPx() }
+
+            val imagePainter = painterResource(id = planoResource)
+            val imageOriginalWidth = imagePainter.intrinsicSize.width
+            val imageOriginalHeight = imagePainter.intrinsicSize.height
+
+            val imageAspect = imageOriginalWidth / imageOriginalHeight
+            val dialogAspect = dialogWidthPx / dialogHeightPx
+
+            // Volvemos a calcular el tamaño real de la imagen respetando el ContentScale.Fit en pantalla completa
+            val drawnWidth = if (dialogAspect > imageAspect) {
+                dialogHeightPx * imageAspect
+            } else {
+                dialogWidthPx
+            }
+
+            val drawnHeight = if (dialogAspect > imageAspect) {
+                dialogHeightPx
+            } else {
+                dialogWidthPx / imageAspect
+            }
+
+            val fitOffsetX = (dialogWidthPx - drawnWidth) / 2f
+            val fitOffsetY = (dialogHeightPx - drawnHeight) / 2f
+
+            // Plano escalado con la matriz gráfica
+            Image(
+                painter = imagePainter,
+                contentDescription = "Plano Interactivo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offsetX,
+                        translationY = offsetY,
+                        transformOrigin = TransformOrigin(0f, 0f)
+                    ),
+                contentScale = ContentScale.Fit
+            )
+
+            // Posicionado del marcador aplicando de forma solidaria el Zoom (scale) y el Desplazamiento (offsetX/Y)
+            val markerRadiusPx = with(density) { 15.dp.toPx() } // Radio de un tamaño de 30.dp
+
+            val markerX = (fitOffsetX + (coordenadaX * drawnWidth)) * scale + offsetX - markerRadiusPx
+            val markerY = (fitOffsetY + (coordenadaY * drawnHeight)) * scale + offsetY - markerRadiusPx
+
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
+                    .size(30.dp)
+                    .background(BluePrimary, CircleShape)
+                    .border(4.dp, Color.White, CircleShape)
+            )
+
+            // Botón cerrar flotante
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 16.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+            }
         }
     }
 }

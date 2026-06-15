@@ -1,6 +1,7 @@
 package com.example.ubicafii.ui.detail
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ubicafii.data.model.Espacio
 import com.example.ubicafii.data.repository.EspacioRepository
@@ -8,10 +9,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class DetailViewModel : ViewModel() {
-    private val repository = EspacioRepository()
+// Cambiado a AndroidViewModel para recibir la aplicación
+class DetailViewModel(application: Application) : AndroidViewModel(application) {
+
+    // Pasamos el contexto al repositorio
+    private val repository = EspacioRepository(application)
+
     private val _espacio = MutableStateFlow<Espacio?>(null)
     val espacio: StateFlow<Espacio?> = _espacio
+
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando
 
@@ -21,7 +27,12 @@ class DetailViewModel : ViewModel() {
             try {
                 _espacio.value = repository.obtenerEspacio(id)
             } catch (e: Exception) {
-                _espacio.value = null
+                // Si falla Node.js, obtenerEspacio ya tiene soporte interno para buscar en la caché
+                try {
+                    _espacio.value = repository.obtenerEspacio(id)
+                } catch (cacheError: Exception) {
+                    _espacio.value = null
+                }
             } finally {
                 _cargando.value = false
             }

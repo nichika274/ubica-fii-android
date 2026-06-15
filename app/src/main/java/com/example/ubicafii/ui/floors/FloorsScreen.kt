@@ -111,11 +111,10 @@ fun FloorsScreen(
             }
         }
 
-        // Filtros de tipo
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White)
+                .horizontalScroll(rememberScrollState())  // <-- Esto permite deslizar
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {

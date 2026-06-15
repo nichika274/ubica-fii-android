@@ -1,107 +1,155 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const db = require('./database'); // ◄ Importa la base de datos (Paso 4)
+
 const app = express();
 const PORT = 3001;
 
+// Asegurar que la carpeta 'uploads' exista para evitar errores al subir archivos
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // ◄ ¡Importante! Permite procesar JSON en las peticiones
 
-// Datos de ejemplo (simula la base de datos)
-let espacios = [
-  {
-    id: 1,
-    nombre: "Aula 101",
-    tipo: "aula",
-    piso: 1,
-    descripcion: "Aula con proyector y pizarra digital.",
-    fotoUrl: "https://via.placeholder.com/400?text=Aula+101",
-    indicaciones: "Primer piso, girar a la derecha al salir de las escaleras.",
-    bloque: "Bloque A"
+// Servir archivos estáticos (imágenes subidas)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Configurar almacenamiento de imágenes con Multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
   },
-  {
-    id: 2,
-    nombre: "Laboratorio 201",
-    tipo: "laboratorio",
-    piso: 2,
-    descripcion: "Laboratorio de cómputo con 30 equipos.",
-    fotoUrl: "https://via.placeholder.com/400?text=Lab+201",
-    indicaciones: "Segundo piso, frente al ascensor.",
-    bloque: "Bloque B"
-  },
-  {
-    id: 3,
-    nombre: "Biblioteca Central",
-    tipo: "biblioteca",
-    piso: 1,
-    descripcion: "Biblioteca principal con sala de lectura.",
-    fotoUrl: "https://via.placeholder.com/400?text=Biblioteca",
-    indicaciones: "Al fondo del pasillo principal.",
-    bloque: "Bloque A"
-  },
-  {
-    id: 4,
-    nombre: "Auditorio Magno",
-    tipo: "auditorio",
-    piso: 1,
-    descripcion: "Auditorio con capacidad para 200 personas.",
-    fotoUrl: "https://via.placeholder.com/400?text=Auditorio",
-    indicaciones: "Junto a la entrada principal.",
-    bloque: "Bloque C"
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + '-' + path.basename(file.originalname);
+    cb(null, uniqueName);
   }
-];
+});
+const upload = multer({ storage: storage });
 
-// GET /api/espacios (con filtros)
+// --- RUTAS API (CONECTADAS A LA BASE DE DATOS) ---
+
+// GET todos los espacios (con filtros)
 app.get('/api/espacios', (req, res) => {
   const { piso, tipo, q } = req.query;
-  let resultado = espacios;
-  if (piso) resultado = resultado.filter(e => e.piso == parseInt(piso));
-  if (tipo) resultado = resultado.filter(e => e.tipo.toLowerCase() === tipo.toLowerCase());
-  if (q) resultado = resultado.filter(e => e.nombre.toLowerCase().includes(q.toLowerCase()));
-  res.json(resultado);
+  let query = 'SELECT * FROM espacios WHERE 1=1';
+  const params = [];
+
+  if (piso) {
+    query += ' AND piso = ?';
+    params.push(parseInt(piso));
+  }
+  if (tipo) {
+    query += ' AND tipo = ?';
+    params.push(tipo);
+  }
+  if (q) {
+    query += ' AND nombre LIKE ?';
+    params.push(`%${q}%`);
+  }
+
+  try {
+    const espacios = db.prepare(query).all(...params);
+    res.json(espacios);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// GET /api/espacios/:id
+// GET espacio por ID
 app.get('/api/espacios/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const espacio = espacios.find(e => e.id === id);
-  if (espacio) {
-    res.json(espacio);
-  } else {
-    res.status(404).json({ mensaje: 'Espacio no encontrado' });
+  try {
+    const espacio = db.prepare('SELECT * FROM espacios WHERE id = ?').get(req.params.id);
+    if (espacio) {
+      res.json(espacio);
+    } else {
+      res.status(404).json({ mensaje: 'Espacio no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// POST /api/espacios
+// POST crear espacio (Los datos vienen en JSON enviados por tu App)
 app.post('/api/espacios', (req, res) => {
-  const { nombre, tipo, piso, descripcion, fotoUrl, indicaciones, bloque } = req.body;
-  const nuevoId = espacios.length > 0 ? Math.max(...espacios.map(e => e.id)) + 1 : 1;
-  const nuevo = { id: nuevoId, nombre, tipo, piso, descripcion, fotoUrl, indicaciones, bloque };
-  espacios.push(nuevo);
-  res.status(201).json(nuevo);
+  const { nombre, tipo, piso, descripcion, fotoUrl, indicaciones, bloque, coordenadaX, coordenadaY } = req.body;
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO espacios (nombre, tipo, piso, descripcion, fotoUrl, indicaciones, bloque, coordenadaX, coordenadaY)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const info = stmt.run(
+      nombre,
+      tipo,
+      parseInt(piso),
+      descripcion || '',
+      fotoUrl || '',
+      indicaciones || '',
+      bloque,
+      coordenadaX || 0.5,
+      coordenadaY || 0.5
+    );
+
+    const nuevo = db.prepare('SELECT * FROM espacios WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json(nuevo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// PUT /api/espacios/:id
+// PUT actualizar espacio
 app.put('/api/espacios/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = espacios.findIndex(e => e.id === id);
-  if (index !== -1) {
-    espacios[index] = { ...espacios[index], ...req.body, id };
-    res.json(espacios[index]);
-  } else {
-    res.status(404).json({ mensaje: 'Espacio no encontrado' });
+  const { nombre, tipo, piso, descripcion, fotoUrl, indicaciones, bloque, coordenadaX, coordenadaY } = req.body;
+
+  try {
+    const stmt = db.prepare(`
+      UPDATE espacios
+      SET nombre=?, tipo=?, piso=?, descripcion=?, fotoUrl=?, indicaciones=?, bloque=?, coordenadaX=?, coordenadaY=?
+      WHERE id=?
+    `);
+
+    stmt.run(nombre, tipo, parseInt(piso), descripcion, fotoUrl, indicaciones, bloque, coordenadaX, coordenadaY, req.params.id);
+
+    const actualizado = db.prepare('SELECT * FROM espacios WHERE id = ?').get(req.params.id);
+    if (actualizado) {
+      res.json(actualizado);
+    } else {
+      res.status(404).json({ mensaje: 'Espacio no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE /api/espacios/:id
+// DELETE eliminar espacio
 app.delete('/api/espacios/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = espacios.findIndex(e => e.id === id);
-  if (index !== -1) {
-    espacios.splice(index, 1);
-    res.status(204).send();
-  } else {
-    res.status(404).json({ mensaje: 'Espacio no encontrado' });
+  try {
+    const resultado = db.prepare('DELETE FROM espacios WHERE id = ?').run(req.params.id);
+    if (resultado.changes > 0) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ mensaje: 'Espacio no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
+});
+
+// POST subir imagen de forma independiente y devolver la URL pública
+app.post('/api/upload', upload.single('foto'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se ha adjuntado ningún archivo.' });
+  }
+
+  // Construye la URL pública del archivo subido
+  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  res.json({ url });
 });
 
 // Iniciar servidor

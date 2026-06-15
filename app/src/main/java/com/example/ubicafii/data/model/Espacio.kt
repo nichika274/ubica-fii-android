@@ -8,6 +8,7 @@ data class Espacio(
     val descripcion: String,
     val fotoUrl: String,
     val indicaciones: String,
-    val bloque: String
-
+    val bloque: String,
+    val coordenadaX: Float = 0.5f,
+    val coordenadaY: Float = 0.3f
 )
