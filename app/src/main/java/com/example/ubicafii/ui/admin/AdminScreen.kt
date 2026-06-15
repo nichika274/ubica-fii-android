@@ -140,7 +140,7 @@ fun AdminScreen(
                         ) {
                             FilterChip(
                                 selected = filtroBloque == "all",
-                                onClick = { filtroBloque = "all" },
+                                onClick = { filtroBloque == "all" },
                                 label = { Text("Todos", fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     containerColor = if (filtroBloque == "all") Color.White else Color.White.copy(alpha = 0.18f),
@@ -170,11 +170,10 @@ fun AdminScreen(
                     }
                 }
 
-                // Lista de espacios
+                // Lista de espacios con el ajuste de padding al final aplicado aquí
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filtrados) { espacio ->
@@ -255,7 +254,7 @@ fun SpaceFormScreen(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope() // ◄ El scope correcto de Jetpack Compose
+    val scope = rememberCoroutineScope()
 
     var nombre by remember { mutableStateOf(espacio?.nombre ?: "") }
     var tipo by remember { mutableStateOf(espacio?.tipo ?: "Aula") }
@@ -293,25 +292,23 @@ fun SpaceFormScreen(
         }
     }
 
-    // ◄ LAUNCHER CORREGIDO USANDO 'scope' Y 'RetrofitClient.instance' ►
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
-            scope.launch { // ◄ Usando el CoroutineScope de Compose
+            scope.launch {
                 subiendoImagen = true
                 try {
-                    val api = RetrofitClient.instance // ◄ Utiliza tu Singleton centralizado
+                    val api = RetrofitClient.instance
                     val inputStream = context.contentResolver.openInputStream(selectedUri)
                     val bytes = inputStream?.readBytes()
                     val requestBody = bytes?.toRequestBody("image/*".toMediaTypeOrNull())
                     val part = MultipartBody.Part.createFormData("foto", "foto.jpg", requestBody!!)
 
                     val response = api.uploadImage(part)
-                    fotoLocalPath = response.url // URL pública devuelta por el servidor
+                    fotoLocalPath = response.url
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    // Fallback local en modo offline si el backend falla
                     val fileName = "espacio_${System.currentTimeMillis()}.jpg"
                     fotoLocalPath = copyUriToInternalStorage(context, selectedUri, fileName)
                 } finally {
