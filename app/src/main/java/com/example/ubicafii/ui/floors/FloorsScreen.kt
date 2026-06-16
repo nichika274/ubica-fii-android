@@ -35,10 +35,10 @@ data class BloqueData(
 )
 
 val bloquesMap = mapOf(
-    "A" to BloqueData("A", "Bloque A", "https://images.unsplash.com/photo-1770146605141-cd08750b3b4c?w=400&h=250&fit=crop&auto=format", listOf("Sótano", "1", "2", "3"), "Bloque principal con aulas de pregrado y laboratorios de cómputo."),
+    "A" to BloqueData("A", "Bloque A", "https://images.unsplash.com/photo-1770146605141-cd08750b3b4c?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque principal con aulas de pregrado y laboratorios de cómputo."),
     "B" to BloqueData("B", "Bloque B", "https://images.unsplash.com/photo-1762972922113-878e5223711f?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque administrativo con oficinas de docentes y decanato."),
-    "C" to BloqueData("C", "Bloque C", "https://images.unsplash.com/photo-1777378543333-b4fb4f96fdd3?w=400&h=250&fit=crop&auto=format", listOf("1", "2"), "Bloque de laboratorios especializados y talleres."),
-    "D" to BloqueData("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Sótano", "1", "2", "3", "4"), "Bloque de biblioteca central, bienestar y cafetería.")
+    "C" to BloqueData("C", "Bloque C", "https://images.unsplash.com/photo-1777378543333-b4fb4f96fdd3?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque de laboratorios especializados y talleres."),
+    "D" to BloqueData("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("1", "2"), "Bloque de biblioteca central, bienestar y cafetería.")
 )
 
 val filterTypes = listOf("Aula", "Laboratorio", "Oficina", "Baño")

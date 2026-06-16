@@ -427,20 +427,50 @@ fun SpaceFormScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Piso", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..3).forEach { num ->
-                    val selected = piso == num.toString()
-                    FilterChip(
-                        selected = selected,
-                        onClick = { piso = num.toString() },
-                        label = { Text("Piso $num", fontSize = 12.sp) },
-                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = BluePrimary, selectedLabelColor = Color.White, labelColor = MutedForeground),
-                        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                        shape = RoundedCornerShape(24.dp)
+        // Opciones reales de piso
+                    val floorOptions = listOf(
+                        "Planta baja" to "0",
+                        "Primer piso" to "1",
+                        "Segundo piso" to "2"
                     )
-                }
-            }
+
+                    Text(
+                        "Piso",
+                        fontWeight = FontWeight.Bold,
+                        color = Foreground,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        floorOptions.forEach { (label, value) ->
+
+                            val selected = piso == value
+
+                            FilterChip(
+                                selected = selected,
+                                onClick = { piso = value },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = Muted.copy(alpha = 0.4f),
+                                    selectedContainerColor = BluePrimary,
+                                    selectedLabelColor = Color.White,
+                                    labelColor = MutedForeground
+                                ),
+                                border = if (selected)
+                                    null
+                                else
+                                    BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+                    }
 
             Spacer(modifier = Modifier.height(16.dp))
 
