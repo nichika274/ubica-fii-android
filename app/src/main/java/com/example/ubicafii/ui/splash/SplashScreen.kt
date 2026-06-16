@@ -16,6 +16,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.ubicafii.R
 
 @Composable
 fun SplashScreen(onSplashFinished: () -> Unit) {
@@ -37,23 +41,19 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
     Box(
         modifier = Modifier.fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)))),
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.scale(scaleAnim.value).alpha(alphaAnim.value)) {
             // Logo
-            Box(
-                modifier = Modifier.size(112.dp)
-                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("FII", fontSize = 38.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Ubica-FII", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            Text("Facultad de Ingeniería Industrial", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
-            Spacer(modifier = Modifier.height(32.dp))
+            Image(
+                painter = painterResource(id = R.drawable.logo_inicio),
+                contentDescription = "Logo",
+                modifier = Modifier.size(990.dp),
+                contentScale = ContentScale.Fit
+            )
+
             // Dots animados
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(3) { index ->
@@ -62,7 +62,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                         initialValue = 0.3f,
                         targetValue = 1f,
                         animationSpec = infiniteRepeatable(
-                            animation = tween(600, delayMillis = index * 200),
+                            animation = tween(900, delayMillis = index * 200),
                             repeatMode = RepeatMode.Reverse
                         )
                     )
