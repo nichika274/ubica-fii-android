@@ -38,10 +38,10 @@ data class Bloque(
 )
 
 val bloques = listOf(
-    Bloque("A", "Bloque A", "https://images.unsplash.com/photo-1770146605141-cd08750b3b4c?w=400&h=250&fit=crop&auto=format", listOf("Sótano", "1", "2", "3")),
+    Bloque("A", "Bloque A", "https://images.unsplash.com/photo-1770146605141-cd08750b3b4c?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3")),
     Bloque("B", "Bloque B", "https://images.unsplash.com/photo-1762972922113-878e5223711f?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3")),
-    Bloque("C", "Bloque C", "https://images.unsplash.com/photo-1777378543333-b4fb4f96fdd3?w=400&h=250&fit=crop&auto=format", listOf("1", "2")),
-    Bloque("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Sótano", "1", "2", "3", "4"))
+    Bloque("C", "Bloque C", "https://images.unsplash.com/photo-1777378543333-b4fb4f96fdd3?w=400&h=250&fit=crop&auto=format", listOf("1", "2","3")),
+    Bloque("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("1", "2"))
 )
 
 val frequentIds = listOf("D-1-CAF", "D-2-BIB", "D-1-ENT")
