@@ -32,10 +32,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.ubicafii.R
+
 import com.example.ubicafii.ui.theme.*
 import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
+import com.example.ubicafii.util.getFloorLabel
+import com.example.ubicafii.util.getFloorPlanResource
 import java.io.File
 
 @Composable
@@ -64,13 +67,8 @@ fun DetailScreen(
 
     val esp = espacio ?: return
 
-    val planoResource = when (esp.piso.toString()) {
-        "Sótano" -> R.drawable.plano_piso1
-        "1" -> R.drawable.plano_piso1
-        "2" -> R.drawable.plano_piso1
-        "3" -> R.drawable.plano_piso1
-        else -> R.drawable.plano_piso1
-    }
+    // dynamic matching usando tu función utilitaria con los DOS parámetros
+    val planoResource = getFloorPlanResource(esp.bloque, esp.piso.toString())
 
     Column(
         modifier = Modifier
@@ -178,7 +176,7 @@ fun DetailScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = BluePrimary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bloque ${esp.bloque} · Piso ${esp.piso}", fontSize = 13.sp, color = MutedForeground)
+                        Text("Bloque ${esp.bloque} · ${getFloorLabel(esp.piso.toString())}", fontSize = 13.sp, color = MutedForeground)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.background(BlueLight, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
@@ -191,7 +189,7 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Cómo llegar (Tarjeta con Miniatura de Plano Ajustada por Aspect Ratio)
+            // Cómo llegar (Tarjeta con Miniatura de Plano)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -209,7 +207,7 @@ fun DetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // MINI MAPA ESTÁTICO: Evita deformaciones calculando el tamaño real de la imagen en ContentScale.Fit
+                    // MINI MAPA ESTÁTICO
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -221,7 +219,6 @@ fun DetailScreen(
                         val containerWidthPx = with(density) { maxWidth.toPx() }
                         val containerHeightPx = with(density) { maxHeight.toPx() }
 
-                        // Obtenemos las dimensiones de la imagen original (Ej: plano_piso1 es 1195x896)
                         val imagePainter = painterResource(id = planoResource)
                         val imageOriginalWidth = imagePainter.intrinsicSize.width
                         val imageOriginalHeight = imagePainter.intrinsicSize.height
@@ -229,7 +226,6 @@ fun DetailScreen(
                         val imageAspect = imageOriginalWidth / imageOriginalHeight
                         val containerAspect = containerWidthPx / containerHeightPx
 
-                        // Calculamos cuánto mide la imagen real renderizada en pantalla dentro del ContentScale.Fit
                         val drawnWidth = if (containerAspect > imageAspect) {
                             containerHeightPx * imageAspect
                         } else {
@@ -242,7 +238,6 @@ fun DetailScreen(
                             containerWidthPx / imageAspect
                         }
 
-                        // Calculamos los offsets de los bordes vacíos generados para centrar el mapa
                         val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
                         val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
 
@@ -253,7 +248,6 @@ fun DetailScreen(
                             contentScale = ContentScale.Fit
                         )
 
-                        // Dibujamos el marcador aplicando el desfase del centrado de imagen y su propio radio (12.dp = 24.dp / 2)
                         val markerRadiusPx = with(density) { 12.dp.toPx() }
                         val markerX = fitOffsetX + (esp.coordenadaX * drawnWidth) - markerRadiusPx
                         val markerY = fitOffsetY + (esp.coordenadaY * drawnHeight) - markerRadiusPx
@@ -268,7 +262,7 @@ fun DetailScreen(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Ubicación del espacio en el plano (Piso ${esp.piso})",
+                        text = "Ubicación del espacio en el plano (${getFloorLabel(esp.piso.toString())})",
                         fontSize = 11.sp,
                         color = MutedForeground,
                         textAlign = TextAlign.Center,
@@ -279,7 +273,6 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones de acción inferiores
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -290,7 +283,7 @@ fun DetailScreen(
                             action = Intent.ACTION_SEND
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\nPiso ${esp.piso} · ${esp.indicaciones}\n\nUbicación exacta: ubicafii://espacio?id=${esp.id}"
+                                "UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n${getFloorLabel(esp.piso.toString())} · ${esp.indicaciones}\n\nUbicación exacta: ubicafii://espacio?id=${esp.id}"
                             )
                             type = "text/plain"
                         }
@@ -349,7 +342,6 @@ fun PlanoDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        // VISOR COMPLETO CON ZOOM: Usamos BoxWithConstraints para saber el tamaño exacto del diálogo de forma responsiva
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -379,7 +371,6 @@ fun PlanoDialog(
             val imageAspect = imageOriginalWidth / imageOriginalHeight
             val dialogAspect = dialogWidthPx / dialogHeightPx
 
-            // Volvemos a calcular el tamaño real de la imagen respetando el ContentScale.Fit en pantalla completa
             val drawnWidth = if (dialogAspect > imageAspect) {
                 dialogHeightPx * imageAspect
             } else {
@@ -395,7 +386,6 @@ fun PlanoDialog(
             val fitOffsetX = (dialogWidthPx - drawnWidth) / 2f
             val fitOffsetY = (dialogHeightPx - drawnHeight) / 2f
 
-            // Plano escalado con la matriz gráfica
             Image(
                 painter = imagePainter,
                 contentDescription = "Plano Interactivo",
@@ -411,8 +401,7 @@ fun PlanoDialog(
                 contentScale = ContentScale.Fit
             )
 
-            // Posicionado del marcador aplicando de forma solidaria el Zoom (scale) y el Desplazamiento (offsetX/Y)
-            val markerRadiusPx = with(density) { 15.dp.toPx() } // Radio de un tamaño de 30.dp
+            val markerRadiusPx = with(density) { 15.dp.toPx() }
 
             val markerX = (fitOffsetX + (coordenadaX * drawnWidth)) * scale + offsetX - markerRadiusPx
             val markerY = (fitOffsetY + (coordenadaY * drawnHeight)) * scale + offsetY - markerRadiusPx
@@ -425,7 +414,6 @@ fun PlanoDialog(
                     .border(4.dp, Color.White, CircleShape)
             )
 
-            // Botón cerrar flotante
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier

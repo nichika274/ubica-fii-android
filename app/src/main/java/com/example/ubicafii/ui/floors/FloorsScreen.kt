@@ -38,7 +38,7 @@ val bloquesMap = mapOf(
     "A" to BloqueData("A", "Bloque A", "https://images.unsplash.com/photo-1770146605141-cd08750b3b4c?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque principal con aulas de pregrado y laboratorios de cómputo."),
     "B" to BloqueData("B", "Bloque B", "https://images.unsplash.com/photo-1762972922113-878e5223711f?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque administrativo con oficinas de docentes y decanato."),
     "C" to BloqueData("C", "Bloque C", "https://images.unsplash.com/photo-1777378543333-b4fb4f96fdd3?w=400&h=250&fit=crop&auto=format", listOf("1", "2", "3"), "Bloque de laboratorios especializados y talleres."),
-    "D" to BloqueData("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("1", "2"), "Bloque de biblioteca central, bienestar y cafetería.")
+    "D" to BloqueData("D", "Bloque D", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("0", "1", "2"), "Bloque de biblioteca central, bienestar y cafetería.")
 )
 
 val filterTypes = listOf("Aula", "Laboratorio", "Oficina", "Baño")
@@ -54,14 +54,15 @@ fun FloorsScreen(
     val pisos by viewModel.pisos.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
 
-    var pisoSeleccionado by remember { mutableStateOf("1") }
+    val bloque = bloquesMap[bloqueId] ?: bloquesMap["A"]!!
+    var pisoSeleccionado by remember(bloqueId) {
+        mutableStateOf(bloque.pisos.firstOrNull() ?: "1")
+    }
     var filtroTipo by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(bloqueId) {
         viewModel.cargarBloque(bloqueId)
     }
-
-    val bloque = bloquesMap[bloqueId] ?: bloquesMap["A"]!!
 
     val espaciosFiltrados = remember(espacios, pisoSeleccionado, filtroTipo) {
         espacios.filter {
@@ -71,7 +72,7 @@ fun FloorsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Header azul
+        // --- HEADER AZUL ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,7 +84,7 @@ fun FloorsScreen(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White.copy(alpha = 0.8f))
                     }
                     Text("Inicio", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                 }
@@ -91,16 +92,26 @@ fun FloorsScreen(
                 Text(bloque.nombre, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text(bloque.descripcion, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(16.dp))
-                // Chips de pisos
+
+                // Chips de pisos dinámicos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    pisos.forEach { pisoStr ->
+                    val listaPisos = pisos.ifEmpty { bloque.pisos }
+                    listaPisos.forEach { pisoStr ->
                         FilterChip(
                             selected = pisoStr == pisoSeleccionado,
                             onClick = {
                                 pisoSeleccionado = pisoStr
-                                filtroTipo = null // resetear filtro al cambiar de piso
+                                filtroTipo = null
                             },
-                            label = { Text(if (pisoStr == "Sótano") "Sótano" else "Piso $pisoStr") },
+                            label = {
+                                Text(
+                                    when (pisoStr) {
+                                        "0" -> "Planta Baja"
+                                        "Sótano" -> "Sótano"
+                                        else -> "Piso $pisoStr"
+                                    }
+                                )
+                            },
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = if (pisoStr == pisoSeleccionado) Color.White else Color.White.copy(alpha = 0.18f),
                                 labelColor = if (pisoStr == pisoSeleccionado) BluePrimary else Color.White
@@ -111,11 +122,13 @@ fun FloorsScreen(
             }
         }
 
+        // --- FILTROS POR TIPO (Horizontal Scroll) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())  // <-- Esto permite deslizar
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
@@ -152,10 +165,10 @@ fun FloorsScreen(
             }
         }
 
-        // Lista de espacios
+        // --- LISTA DE ESPACIOS (LazyColumn) ---
         if (cargando) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = BluePrimary)
             }
         } else if (espaciosFiltrados.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -166,7 +179,10 @@ fun FloorsScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(espaciosFiltrados) { espacio ->
@@ -180,14 +196,18 @@ fun FloorsScreen(
 @Composable
 fun TarjetaEspacioPiso(espacio: Espacio, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp)),
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(getTypeIcon(espacio.tipo), contentDescription = null, tint = getTypeColor(espacio.tipo), modifier = Modifier.size(22.dp))
@@ -195,16 +215,20 @@ fun TarjetaEspacioPiso(espacio: Espacio, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(espacio.nombre, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Foreground)
-                Text(espacio.id.toString(), fontSize = 11.sp, color = MutedForeground) // código
+                Text(espacio.id.toString(), fontSize = 11.sp, color = MutedForeground)
                 Spacer(modifier = Modifier.height(2.dp))
-                Box(modifier = Modifier.background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Box(modifier = Modifier
+                    .background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)) {
                     Text(espacio.tipo, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = getTypeColor(espacio.tipo))
                 }
             }
             AsyncImage(
                 model = espacio.fotoUrl.ifEmpty { "https://via.placeholder.com/56" },
                 contentDescription = null,
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)),
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFBDBDBD), modifier = Modifier.size(18.dp))
