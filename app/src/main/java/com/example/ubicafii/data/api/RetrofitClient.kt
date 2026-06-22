@@ -6,7 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://hurricane-dutiful-immunity.ngrok-free.dev/"
+    private const val BASE_URL = "https://ubicafii-backend.onrender.com/"
 
     // 1. Creamos un cliente de red con tiempos de espera ultra rápidos (3 segundos)
     private val okHttpClient = OkHttpClient.Builder()
