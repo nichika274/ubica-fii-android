@@ -25,14 +25,22 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             _cargando.value = true
             try {
-                _espacio.value = repository.obtenerEspacio(id)
+                println("ID QUE LLEGA AL DETALLE: $id")
+
+                val resultado = repository.obtenerEspacio(id)
+
+                println("ESPACIO RECIBIDO: ${resultado.nombre}")
+                println("===== DATOS ANDROID =====")
+                println("ID: ${resultado.id}")
+                println("NOMBRE: ${resultado.nombre}")
+                println("DESC: ${resultado.descripcion}")
+                println("FOTO: ${resultado.fotoUrl}")
+                println("=========================")
+
+                _espacio.value = resultado
+
             } catch (e: Exception) {
-                // Si falla Node.js, obtenerEspacio ya tiene soporte interno para buscar en la caché
-                try {
-                    _espacio.value = repository.obtenerEspacio(id)
-                } catch (cacheError: Exception) {
-                    _espacio.value = null
-                }
+                e.printStackTrace()
             } finally {
                 _cargando.value = false
             }

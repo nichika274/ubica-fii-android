@@ -38,10 +38,13 @@ data class Bloque(
 )
 
 val bloques = listOf(
-    Bloque("A", "Bloque A", "https://cdn.phototourl.com/member/2026-06-17-7475f8ec-7748-4107-94dd-236552ce29c9.png", listOf("1", "2", "3")),
-    Bloque("B", "Bloque B", "https://cdn.phototourl.com/member/2026-06-17-b6e99229-89b5-4fc9-8c18-25e028562473.png", listOf("1", "2", "3")),
-    Bloque("C", "Bloque C", "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png", listOf("1", "2","3")),
-    Bloque("D", "Bloque D", "https://cdn.phototourl.com/member/2026-06-17-898757d9-9bea-4f1c-8ae8-ae81c2a0ab76.jpg", listOf("1", "2"))
+    Bloque("A", "Bloque A", "https://cdn.phototourl.com/member/2026-06-17-7475f8ec-7748-4107-94dd-236552ce29c9.png", listOf("Planta baja", "Piso 1", "Piso 2")),
+    Bloque("B", "Bloque B", "https://cdn.phototourl.com/member/2026-06-17-b6e99229-89b5-4fc9-8c18-25e028562473.png", listOf("Planta baja", "Piso 1", "Piso 2")),
+    Bloque("C", "Bloque C", "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png", listOf("Planta baja", "Piso 1", "Piso 2")),
+    Bloque("D", "Bloque D", "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png", listOf("Planta baja", "Piso 1")),
+    Bloque("E", "Bloque E", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Planta baja", "Piso 1")),
+    Bloque("F", "Bloque F", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Planta baja", "Piso 1")),
+    Bloque("G", "Bloque G", "https://cdn.phototourl.com/member/2026-06-17-898757d9-9bea-4f1c-8ae8-ae81c2a0ab76.jpg", listOf("Planta baja", "Piso 1"))
 )
 
 val frequentNames = listOf(

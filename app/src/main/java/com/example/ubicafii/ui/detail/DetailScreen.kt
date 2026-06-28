@@ -31,12 +31,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.ubicafii.R
-
-import com.example.ubicafii.ui.theme.*
+import com.example.ubicafii.data.model.Espacio
 import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
+import com.example.ubicafii.ui.theme.*
+import com.example.ubicafii.util.PreferencesManager
 import com.example.ubicafii.util.getFloorLabel
 import com.example.ubicafii.util.getFloorPlanResource
 import java.io.File
@@ -50,12 +50,14 @@ fun DetailScreen(
     val espacio by viewModel.espacio.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
     val context = LocalContext.current
-    var copiado by remember { mutableStateOf(false) }
 
+    var copiado by remember { mutableStateOf(false) }
     var showPlanoDialog by remember { mutableStateOf(false) }
+    var showCampusMapDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(espacioId) {
         viewModel.cargarEspacio(espacioId)
+        PreferencesManager.addRecent(context, espacioId)
     }
 
     if (cargando) {
@@ -66,18 +68,18 @@ fun DetailScreen(
     }
 
     val esp = espacio ?: return
-
-    // dynamic matching usando tu función utilitaria con los DOS parámetros
     val planoResource = getFloorPlanResource(esp.bloque, esp.piso.toString())
+    var isFav by remember { mutableStateOf(PreferencesManager.isFavorite(context, esp.id)) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .background(Background)
     ) {
         // Imagen Principal (Hero Image)
-        Box(modifier = Modifier.fillMaxWidth().height(240.dp)) {
-            val imageModel = if (esp.fotoUrl.startsWith("/")) {
+        Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
+            val imageModel = if (esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir")) {
                 File(esp.fotoUrl)
             } else {
                 esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
@@ -95,10 +97,9 @@ fun DetailScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.38f),
+                                Color.Black.copy(alpha = 0.4f),
                                 Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.22f)
+                                Color.Black.copy(alpha = 0.3f)
                             )
                         )
                     )
@@ -109,7 +110,8 @@ fun DetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 48.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = onBack,
@@ -119,28 +121,51 @@ fun DetailScreen(
                 ) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.DarkGray)
                 }
-                IconButton(
-                    onClick = {
-                        copiado = true
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "Mira este espacio en UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n\nAbri en la App: ubicafii://espacio?id=${esp.id}"
-                            )
-                            type = "text/plain"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, "Compartir"))
-                    },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.White.copy(alpha = 0.92f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (copiado) Icons.Default.CheckCircle else Icons.Default.Share,
-                        contentDescription = "Compartir",
-                        tint = if (copiado) Color(0xFF2E7D32) else Color.DarkGray
-                    )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(
+                        onClick = {
+                            if (isFav) {
+                                PreferencesManager.removeFavorite(context, esp.id)
+                                isFav = false
+                            } else {
+                                PreferencesManager.addFavorite(context, esp.id)
+                                isFav = true
+                            }
+                        },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (isFav) Color.Red else Color.DarkGray
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            copiado = true
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    "Mira este espacio en UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n\nAbrir en la App: ubicafii://espacio?id=${esp.id}"
+                                )
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, "Compartir"))
+                        },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (copiado) Icons.Default.CheckCircle else Icons.Default.Share,
+                            contentDescription = "Compartir",
+                            tint = if (copiado) Color(0xFF2E7D32) else Color.DarkGray
+                        )
+                    }
                 }
             }
 
@@ -153,15 +178,15 @@ fun DetailScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(getTypeIcon(esp.tipo), contentDescription = null, modifier = Modifier.size(13.dp), tint = getTypeColor(esp.tipo))
+                    Icon(getTypeIcon(esp.tipo), contentDescription = null, modifier = Modifier.size(14.dp), tint = getTypeColor(esp.tipo))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(esp.tipo, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = getTypeColor(esp.tipo))
+                    Text(esp.tipo, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = getTypeColor(esp.tipo))
                 }
             }
         }
 
         // Contenido Informativo
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
             // Tarjeta de Información General
             Card(
@@ -170,40 +195,38 @@ fun DetailScreen(
                 colors = CardDefaults.cardColors(containerColor = Surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(esp.nombre, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Foreground)
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(esp.nombre, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Foreground)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = BluePrimary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bloque ${esp.bloque} · ${getFloorLabel(esp.piso.toString())}", fontSize = 13.sp, color = MutedForeground)
+                        Text("Bloque ${esp.bloque} · ${getFloorLabel(esp.piso.toString())}", fontSize = 14.sp, color = MutedForeground)
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Box(modifier = Modifier.background(BlueLight, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                        Text(esp.id.toString(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = BluePrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(modifier = Modifier.background(BlueLight, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                        Text(esp.id.toString(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BluePrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(esp.descripcion, fontSize = 13.5.sp, color = Color(0xFF374151), lineHeight = 22.sp)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(esp.descripcion, fontSize = 14.sp, color = Color(0xFF374151), lineHeight = 22.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Cómo llegar (Tarjeta con Miniatura de Plano)
+            // Cómo llegar (Tarjeta con Miniatura de Plano y Botón Integrado)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Directions, contentDescription = null, tint = BluePrimary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cómo llegar", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Foreground)
+                        Text("Cómo llegar", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Foreground)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(esp.indicaciones, fontSize = 13.sp, color = MutedForeground, lineHeight = 20.sp)
+                    Text(esp.indicaciones, fontSize = 14.sp, color = MutedForeground, lineHeight = 21.sp)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -211,8 +234,8 @@ fun DetailScreen(
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .height(220.dp)
+                            .clip(RoundedCornerShape(20.dp))
                             .background(Color(0xFFE8EDF2))
                     ) {
                         val density = LocalDensity.current
@@ -220,23 +243,11 @@ fun DetailScreen(
                         val containerHeightPx = with(density) { maxHeight.toPx() }
 
                         val imagePainter = painterResource(id = planoResource)
-                        val imageOriginalWidth = imagePainter.intrinsicSize.width
-                        val imageOriginalHeight = imagePainter.intrinsicSize.height
-
-                        val imageAspect = imageOriginalWidth / imageOriginalHeight
+                        val imageAspect = imagePainter.intrinsicSize.width / imagePainter.intrinsicSize.height
                         val containerAspect = containerWidthPx / containerHeightPx
 
-                        val drawnWidth = if (containerAspect > imageAspect) {
-                            containerHeightPx * imageAspect
-                        } else {
-                            containerWidthPx
-                        }
-
-                        val drawnHeight = if (containerAspect > imageAspect) {
-                            containerHeightPx
-                        } else {
-                            containerWidthPx / imageAspect
-                        }
+                        val drawnWidth = if (containerAspect > imageAspect) containerHeightPx * imageAspect else containerWidthPx
+                        val drawnHeight = if (containerAspect > imageAspect) containerHeightPx else containerWidthPx / imageAspect
 
                         val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
                         val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
@@ -260,21 +271,34 @@ fun DetailScreen(
                                 .border(3.dp, Color.White, CircleShape)
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Ubicación del espacio en el plano (${getFloorLabel(esp.piso.toString())})",
-                        fontSize = 11.sp,
+                        text = "Ubicación en plano (${getFloorLabel(esp.piso.toString())})",
+                        fontSize = 12.sp,
                         color = MutedForeground,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // BOTÓN "VER PLANO" DENTRO DE LA TARJETA
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showPlanoDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = BluePrimary),
+                        border = BorderStroke(1.5.dp, BluePrimary)
+                    ) {
+                        Icon(Icons.Default.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Ver plano en grande", color = BluePrimary, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Botones inferiores de Acción (Simplificado a 2)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
@@ -291,7 +315,7 @@ fun DetailScreen(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                 ) {
@@ -301,17 +325,17 @@ fun DetailScreen(
                 }
 
                 Button(
-                    onClick = { showPlanoDialog = true },
+                    onClick = { showCampusMapDialog = true },
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BlueLight),
                     border = BorderStroke(1.5.dp, BluePrimary)
                 ) {
-                    Icon(Icons.Default.Map, contentDescription = null, tint = BluePrimary)
+                    Icon(Icons.Default.Public, contentDescription = null, tint = BluePrimary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Ver en plano", color = BluePrimary, fontWeight = FontWeight.Bold)
+                    Text("Ver en mapa", color = BluePrimary, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -323,6 +347,13 @@ fun DetailScreen(
             coordenadaX = esp.coordenadaX,
             coordenadaY = esp.coordenadaY,
             onDismiss = { showPlanoDialog = false }
+        )
+    }
+
+    if (showCampusMapDialog) {
+        CampusMapDialog(
+            espacio = esp,
+            onDismiss = { showCampusMapDialog = false }
         )
     }
 }
@@ -345,7 +376,7 @@ fun PlanoDialog(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.95f))
+                .background(Color.Black.copy(alpha = 0.96f))
                 .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
@@ -365,23 +396,11 @@ fun PlanoDialog(
             val dialogHeightPx = with(density) { maxHeight.toPx() }
 
             val imagePainter = painterResource(id = planoResource)
-            val imageOriginalWidth = imagePainter.intrinsicSize.width
-            val imageOriginalHeight = imagePainter.intrinsicSize.height
-
-            val imageAspect = imageOriginalWidth / imageOriginalHeight
+            val imageAspect = imagePainter.intrinsicSize.width / imagePainter.intrinsicSize.height
             val dialogAspect = dialogWidthPx / dialogHeightPx
 
-            val drawnWidth = if (dialogAspect > imageAspect) {
-                dialogHeightPx * imageAspect
-            } else {
-                dialogWidthPx
-            }
-
-            val drawnHeight = if (dialogAspect > imageAspect) {
-                dialogHeightPx
-            } else {
-                dialogWidthPx / imageAspect
-            }
+            val drawnWidth = if (dialogAspect > imageAspect) dialogHeightPx * imageAspect else dialogWidthPx
+            val drawnHeight = if (dialogAspect > imageAspect) dialogHeightPx else dialogWidthPx / imageAspect
 
             val fitOffsetX = (dialogWidthPx - drawnWidth) / 2f
             val fitOffsetY = (dialogHeightPx - drawnHeight) / 2f

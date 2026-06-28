@@ -1,6 +1,7 @@
 package com.example.ubicafii.ui.admin
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
@@ -44,6 +45,9 @@ import com.example.ubicafii.util.getFloorLabel
 import com.example.ubicafii.util.getFloorPlanResource
 import java.io.File
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 val tiposEspacio = listOf("Aula", "Laboratorio", "Oficina", "Baño", "Biblioteca", "Cafetería", "Otro")
 
@@ -253,6 +257,7 @@ fun SpaceFormScreen(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
 
     var nombre by remember { mutableStateOf(espacio?.nombre ?: "") }
     var tipo by remember { mutableStateOf(espacio?.tipo ?: "Aula") }
@@ -261,153 +266,371 @@ fun SpaceFormScreen(
     var codigo by remember { mutableStateOf(espacio?.id?.toString() ?: "") }
     var descripcion by remember { mutableStateOf(espacio?.descripcion ?: "") }
     var indicaciones by remember { mutableStateOf(espacio?.indicaciones ?: "") }
+    var fotoLocalPath by remember { mutableStateOf(espacio?.fotoUrl ?: "") }
+    var subiendoImagen by remember { mutableStateOf(false) }
 
     var coordenadaX by remember { mutableStateOf(espacio?.coordenadaX ?: 0.5f) }
     var coordenadaY by remember { mutableStateOf(espacio?.coordenadaY ?: 0.5f) }
-    var fotoUrl by remember { mutableStateOf(espacio?.fotoUrl ?: "") }
 
-    val launcher = rememberLauncherForActivityResult(
+    val planoResource = getFloorPlanResource(bloque, piso)
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            val path = copyUriToInternalStorage(context, it, "temp_photo.jpg")
-            if (path != null) {
-                fotoUrl = path
+        uri?.let { selectedUri ->
+            scope.launch {
+                subiendoImagen = true
+                try {
+                    val api = RetrofitClient.instance
+                    val inputStream = context.contentResolver.openInputStream(selectedUri)
+                    val bytes = inputStream?.readBytes()
+                    val requestBody = bytes?.toRequestBody("image/*".toMediaTypeOrNull())
+                    val part = MultipartBody.Part.createFormData("foto", "foto.jpg", requestBody!!)
+
+                    val response = api.uploadImage(part)
+                    fotoLocalPath = response.url
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    val fileName = "espacio_${System.currentTimeMillis()}.jpg"
+                    fotoLocalPath = copyUriToInternalStorage(context, selectedUri, fileName)
+                } finally {
+                    subiendoImagen = false
+                }
             }
         }
     }
 
-    // Solución del error: Pasamos tanto bloque como piso al llamar a la utilidad global
-    val planoResource = getFloorPlanResource(bloque, piso)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = if (espacio == null) "Nuevo Espacio" else "Editar Espacio",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Blue900
-        )
-
-        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre del espacio") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = codigo, onValueChange = { codigo = it }, label = { Text("Código / ID") }, modifier = Modifier.fillMaxWidth(), enabled = espacio == null)
-
-        // Selección de Bloque
-        OutlinedTextField(value = bloque, onValueChange = { bloque = it.uppercase() }, label = { Text("Bloque (Ej: A, B, D)") }, modifier = Modifier.fillMaxWidth())
-
-        // Selección de Piso
-        OutlinedTextField(value = piso, onValueChange = { piso = it }, label = { Text("Piso (0 para Planta Baja, 1, 2)") }, modifier = Modifier.fillMaxWidth())
-
-        OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-        OutlinedTextField(value = indicaciones, onValueChange = { indicaciones = it }, label = { Text("Indicaciones de cómo llegar") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-
-        // Selección de Foto
-        Button(
-            onClick = { launcher.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(containerColor = BlueLight, contentColor = BluePrimary),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Image, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Seleccionar Imagen")
-        }
-
-        if (fotoUrl.isNotEmpty()) {
-            Text("Imagen seleccionada: $fotoUrl", fontSize = 11.sp, color = MutedForeground)
-        }
-
-        // Selección Interactiva de Coordenadas
-        Text("Ubicación en el Mapa (Arrastra el marcador rojo):", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-
-        BoxWithConstraints(
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra superior azul
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF1F5F9))
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        val currentWidth = size.width
-                        val currentHeight = size.height
-
-                        val newXPx = (coordenadaX * currentWidth) + dragAmount.x
-                        val newYPx = (coordenadaY * currentHeight) + dragAmount.y
-
-                        coordenadaX = (newXPx / currentWidth).coerceIn(0f, 1f)
-                        coordenadaY = (newYPx / currentHeight).coerceIn(0f, 1f)
-                    }
-                }
+                .background(brush = Brush.verticalGradient(listOf(Blue900, Blue700)))
+                .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            val containerWidthPx = with(density) { maxWidth.toPx() }
-            val containerHeightPx = with(density) { maxHeight.toPx() }
-
-            val imagePainter = painterResource(id = planoResource)
-            val imageAspect = imagePainter.intrinsicSize.width / imagePainter.intrinsicSize.height
-            val containerAspect = containerWidthPx / containerHeightPx
-
-            val drawnWidth = if (containerAspect > imageAspect) containerHeightPx * imageAspect else containerWidthPx
-            val drawnHeight = if (containerAspect > imageAspect) containerHeightPx else containerWidthPx / imageAspect
-
-            val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
-            val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
-
-            Image(
-                painter = imagePainter,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-
-            val markerX = fitOffsetX + (coordenadaX * drawnWidth) - with(density) { 12.dp.toPx() }
-            val markerY = fitOffsetY + (coordenadaY * drawnHeight) - with(density) { 12.dp.toPx() }
-
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
-                    .size(24.dp)
-                    .background(Color.Red, CircleShape)
-                    .border(2.dp, Color.White, CircleShape)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onCancelar) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                }
+                Text(
+                    text = if (espacio != null) "Editar espacio" else "Nuevo espacio",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onCancelar) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                }
+            }
         }
 
-        Text(text = "Coordenadas: X: ${(coordenadaX * 100).toInt()}% | Y: ${(coordenadaY * 100).toInt()}%", fontSize = 12.sp, color = MutedForeground, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-
-        // Botones de Acción del Formulario
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // Contenido desplazable del formulario
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) {
-                Text("Cancelar")
+            // ───── Nombre ─────
+            Text("Nombre del espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                placeholder = { Text("Ej: Aula 301", color = Color(0xFFBDBDBD)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                shape = RoundedCornerShape(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Código ─────
+            Text("Código", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            OutlinedTextField(
+                value = codigo,
+                onValueChange = { codigo = it },
+                placeholder = { Text("Ej: FII-A-301", color = Color(0xFFBDBDBD)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = espacio == null,
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                shape = RoundedCornerShape(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Tipo de espacio ─────
+            Text("Tipo de espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 4.dp)
+            ) {
+                tiposEspacio.forEach { t ->
+                    val selected = tipo == t
+                    FilterChip(
+                        selected = selected,
+                        onClick = { tipo = t },
+                        label = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = getTypeIcon(t), contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) getTypeColor(t) else MutedForeground)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(text = t, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, color = if (selected) getTypeColor(t) else MutedForeground)
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = getTypeBgColor(t)),
+                        border = if (selected) BorderStroke(1.5.dp, getTypeColor(t)) else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Bloque ─────
+            Text("Bloque", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                bloquesMap.keys.forEach { id ->
+                    val selected = bloque == id
+                    FilterChip(
+                        selected = selected,
+                        onClick = { bloque = id },
+                        label = { Text(id, fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = BluePrimary, selectedLabelColor = Color.White, labelColor = MutedForeground),
+                        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Piso ─────
+            Text("Piso", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val floorOptions = listOf(
+                    "Planta baja" to "0",
+                    "Primer piso" to "1",
+                    "Segundo piso" to "2"
+                )
+                floorOptions.forEach { (label, value) ->
+                    val selected = piso == value
+                    FilterChip(
+                        selected = selected,
+                        onClick = { piso = value },
+                        label = { Text(label, fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = BluePrimary, selectedLabelColor = Color.White, labelColor = MutedForeground),
+                        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Descripción ─────
+            Text("Descripción", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            OutlinedTextField(
+                value = descripcion,
+                onValueChange = { descripcion = it },
+                placeholder = { Text("Describe el espacio, capacidad, equipamiento...", color = Color(0xFFBDBDBD)) },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                shape = RoundedCornerShape(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Indicaciones para llegar ─────
+            Text("Indicaciones para llegar", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            OutlinedTextField(
+                value = indicaciones,
+                onValueChange = { indicaciones = it },
+                placeholder = { Text("Ej: Sube por la escalera principal, segunda puerta...", color = Color(0xFFBDBDBD)) },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                shape = RoundedCornerShape(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ───── Foto del espacio ─────
+            Text("Foto del espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    enabled = !subiendoImagen,
+                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    if (subiendoImagen) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Subiendo...", color = Color.White)
+                    } else {
+                        Icon(Icons.Default.Image, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Seleccionar foto", color = Color.White)
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+
+                if (fotoLocalPath.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.LightGray)
+                    ) {
+                        val imageModel = if (fotoLocalPath.startsWith("/") || fotoLocalPath.contains("filesDir")) {
+                            File(fotoLocalPath)
+                        } else {
+                            fotoLocalPath
+                        }
+                        AsyncImage(
+                            model = imageModel,
+                            contentDescription = "Vista previa",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+
+            // ───── Ubicación en el plano ─────
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Ubicación en el plano", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 4.dp))
+            Text(
+                "Arrastra el marcador azul hasta la posición exacta",
+                fontSize = 12.sp,
+                color = MutedForeground,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // Obtenemos el painterResource en el nivel superior de la Composable (Contexto Válido)
+            val imagePainter = painterResource(id = planoResource)
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFFE8EDF2))
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+
+                            val containerWidthPx = size.width.toFloat()
+                            val containerHeightPx = size.height.toFloat()
+
+                            val imageAspect = imagePainter.intrinsicSize.width / imagePainter.intrinsicSize.height
+                            val containerAspect = containerWidthPx / containerHeightPx
+
+                            val drawnWidth = if (containerAspect > imageAspect) containerHeightPx * imageAspect else containerWidthPx
+                            val drawnHeight = if (containerAspect > imageAspect) containerHeightPx else containerWidthPx / imageAspect
+
+                            val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
+                            val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
+
+                            // Usamos las variables nítidas del painter de arriba
+                            val currentXPx = fitOffsetX + (coordenadaX * drawnWidth) + dragAmount.x
+                            val currentYPx = fitOffsetY + (coordenadaY * drawnHeight) + dragAmount.y
+
+                            coordenadaX = ((currentXPx - fitOffsetX) / drawnWidth).coerceIn(0f, 1f)
+                            coordenadaY = ((currentYPx - fitOffsetY) / drawnHeight).coerceIn(0f, 1f)
+                        }
+                    }
+            ) {
+                val containerWidthPx = with(density) { maxWidth.toPx() }
+                val containerHeightPx = with(density) { maxHeight.toPx() }
+
+                val imageAspect = imagePainter.intrinsicSize.width / imagePainter.intrinsicSize.height
+                val containerAspect = containerWidthPx / containerHeightPx
+
+                val drawnWidth = if (containerAspect > imageAspect) containerHeightPx * imageAspect else containerWidthPx
+                val drawnHeight = if (containerAspect > imageAspect) containerHeightPx else containerWidthPx / imageAspect
+
+                val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
+                val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
+
+                Image(
+                    painter = imagePainter,
+                    contentDescription = "Plano",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+
+                val markerX = fitOffsetX + (coordenadaX * drawnWidth) - with(density) { 12.dp.toPx() }
+                val markerY = fitOffsetY + (coordenadaY * drawnHeight) - with(density) { 12.dp.toPx() }
+
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
+                        .size(24.dp)
+                        .background(Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .background(BluePrimary, CircleShape)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "X: ${String.format("%.0f", coordenadaX * 100)}%, Y: ${String.format("%.0f", coordenadaY * 100)}%",
+                fontSize = 11.sp,
+                color = MutedForeground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Botón Guardar
             Button(
                 onClick = {
                     if (nombre.isNotBlank() && codigo.isNotBlank()) {
-                        val nuevoEspacio = Espacio(
+                        val nuevo = Espacio(
                             id = codigo.toIntOrNull() ?: 0,
                             nombre = nombre,
                             tipo = tipo,
                             piso = piso.toIntOrNull() ?: 1,
-                            bloque = bloque,
                             descripcion = descripcion,
+                            fotoUrl = fotoLocalPath,
                             indicaciones = indicaciones,
+                            bloque = bloque,
                             coordenadaX = coordenadaX,
-                            coordenadaY = coordenadaY,
-                            fotoUrl = fotoUrl
+                            coordenadaY = coordenadaY
                         )
-                        onGuardar(nuevoEspacio)
+                        onGuardar(nuevo)
                     }
                 },
+                enabled = !subiendoImagen,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
-                modifier = Modifier.weight(1f)
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Guardar")
+                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }

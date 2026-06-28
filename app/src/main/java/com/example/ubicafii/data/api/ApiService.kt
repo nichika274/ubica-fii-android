@@ -1,6 +1,8 @@
 package com.example.ubicafii.data.api
 
+import com.example.ubicafii.data.model.BloqueMapa
 import com.example.ubicafii.data.model.Espacio
+import com.example.ubicafii.data.model.PuntoInteres
 import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -23,8 +25,12 @@ interface ApiService {
         @Query("q") q: String? = null
     ): List<Espacio>
 
+    @GET("api/bloques")
+    suspend fun getBloques(): List<BloqueMapa>
     @GET("api/espacios/{id}")
     suspend fun getEspacio(@Path("id") id: Int): Espacio
+    @GET("api/puntos-interes")
+    suspend fun getPuntosInteres(): List<PuntoInteres>
 
     @POST("api/espacios")
     suspend fun crearEspacio(@Body espacio: Espacio): Espacio
