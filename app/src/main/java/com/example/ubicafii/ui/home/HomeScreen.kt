@@ -28,7 +28,10 @@ import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
 import com.example.ubicafii.ui.theme.home.HomeViewModel
-
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import com.example.ubicafii.R
 // Datos de bloques simulados
 data class Bloque(
     val id: String,
@@ -49,7 +52,7 @@ val bloques = listOf(
 
 val frequentNames = listOf(
     "Secretaría",
-    "Fueiss",
+    "Fueiist",
     "Decanato"
 )
 @Composable
@@ -91,40 +94,67 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(189.dp) // Reduce la altura del fondo azul
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(Blue900, Blue700)
                         )
                     )
-                    .padding(start = 20.dp, end = 20.dp, top = 48.dp, bottom = 24.dp)
-            ) {
+            )
+                {
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Spacer(modifier = Modifier.width(0.dp))
+
+
+                        Column(
+                            modifier = Modifier.offset(
+                                x = (-90).dp,   // Derecha (+) | Izquierda (-)
+                                y = 10.dp     // Abajo (+) | Arriba (-)
+                            )
+                        )  {
+
                             Text(
                                 "Bienvenido a",
                                 color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 12.sp
+                                fontSize = 18.sp
                             )
+
                             Text(
                                 "Ubica-FII",
                                 color = Color.White,
-                                fontSize = 22.sp,
+                                fontSize = 23.sp,
                                 fontWeight = FontWeight.Bold
+
                             )
                         }
-                        IconButton(
-                            onClick = { /* notificaciones */ },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(Color.White.copy(alpha = 0.15f), CircleShape)
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White)
+                            Image(
+                                painter = painterResource(R.drawable.logo_ubicafii),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(113.dp)
+                                    .offset(
+                                        x = (-25).dp,            //Derecha (+) | Izquierda (-)
+                                        y = 10.dp              // Abajo (+) | Arriba (-)
+                                    )
+                                    .graphicsLayer {
+                                        scaleX = 1.4f
+                                        scaleY = 1.4f
+                                    }
+                            )
+
+
                         }
+
+
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

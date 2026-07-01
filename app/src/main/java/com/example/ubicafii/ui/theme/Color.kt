@@ -2,8 +2,8 @@ package com.example.ubicafii.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Blue900 = Color(0xFF0D47A1)
-val Blue700 = Color(0xFF1976D2)
+val Blue900 = Color(0xFF0026FF)
+val Blue700 = Color(0xFF3566E1)
 val BluePrimary = Color(0xFF1565C0)
 val BlueLight = Color(0xFFDBEAFE)
 val BlueSurface = Color(0xFFEFF6FF)
