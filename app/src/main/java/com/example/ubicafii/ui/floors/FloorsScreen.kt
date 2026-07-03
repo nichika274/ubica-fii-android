@@ -25,6 +25,7 @@ import com.example.ubicafii.ui.theme.*
 import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
+import androidx.compose.foundation.isSystemInDarkTheme
 
 data class BloqueData(
     val id: String,
@@ -54,36 +55,35 @@ val bloquesMap = mapOf(
         "Bloque C",
         "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png",
         listOf("0", "1", "2"),
-        "Bloque de laboratorios especializados y talleres."
+        "Bloque de laboratorios especializados y aulas."
     ),
     "D" to BloqueData(
-        "C",
-        "Bloque C",
-        "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png",
-        listOf("0", "1", "2"),
+        "D",
+        "Bloque D",
+        "https://cdn.phototourl.com/member/2026-07-02-53d0580a-fed3-4904-bc0a-87b25208e09f.jpg",
+        listOf("0", "1"),
         "Bloque de laboratorios especializados y talleres."
     ),
-
     "E" to BloqueData(
         "E",
         "Bloque E",
-        "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format",
+        "https://cdn.phototourl.com/member/2026-07-02-87b04a35-f2c7-4ce3-a2f3-8e197bd55039.jpg",
         listOf("0", "1"),
-        "Bloque E (antes parte del antiguo D)"
+        "Bloque E de Taller de mecánica."
     ),
     "F" to BloqueData(
         "F",
         "Bloque F",
         "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format",
         listOf("0", "1"),
-        "Bloque F (antes parte del antiguo D)"
+        "Bloque F de Taller Industrial"
     ),
     "G" to BloqueData(
         "G",
         "Bloque G",
-        "https://cdn.phototourl.com/member/2026-06-17-898757d9-9bea-4f1c-8ae8-ae81c2a0ab76.jpg",
+        "https://cdn.phototourl.com/member/2026-07-02-02f8fea9-34c2-45b9-9151-7b8d21e18790.jpg",
         listOf("0", "1"),
-        "Bloque de biblioteca central, bienestar y cafetería."
+        "Bloque de aulas especializadas."
     )
 )
 val filterTypes = listOf("Aula", "Laboratorio", "Oficina", "Baño")
@@ -116,34 +116,59 @@ fun FloorsScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // --- HEADER AZUL ---
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+
+        // --- HEADER CON GRADIENTE ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.verticalGradient(colors = listOf(Blue900, Blue700))
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Blue900, Blue700)
+                    )
                 )
                 .padding(start = 16.dp, end = 16.dp, top = 48.dp, bottom = 16.dp)
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White.copy(alpha = 0.8f))
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        )
                     }
-                    Text("Inicio", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                    Text(
+                        "Inicio",
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(bloque.nombre, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(bloque.descripcion, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                Text(
+                    bloque.nombre,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    bloque.descripcion,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                    fontSize = 12.sp
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Chips de pisos dinámicos
+                // Chips de pisos dinámicos adaptados
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val listaPisos = pisos.ifEmpty { bloque.pisos }
                     listaPisos.forEach { pisoStr ->
+                        val isSelected = pisoStr == pisoSeleccionado
                         FilterChip(
-                            selected = pisoStr == pisoSeleccionado,
+                            selected = isSelected,
                             onClick = {
                                 pisoSeleccionado = pisoStr
                                 filtroTipo = null
@@ -158,8 +183,8 @@ fun FloorsScreen(
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = if (pisoStr == pisoSeleccionado) Color.White else Color.White.copy(alpha = 0.18f),
-                                labelColor = if (pisoStr == pisoSeleccionado) BluePrimary else Color.White
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f),
+                                labelColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -167,7 +192,9 @@ fun FloorsScreen(
             }
         }
 
-        // --- FILTROS POR TIPO (Horizontal Scroll) ---
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- FILTROS POR TIPO ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,8 +208,8 @@ fun FloorsScreen(
                 onClick = { filtroTipo = null },
                 label = { Text("Todos", fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = if (filtroTipo == null) BluePrimary else Muted,
-                    labelColor = if (filtroTipo == null) Color.White else MutedForeground
+                    containerColor = if (filtroTipo == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    labelColor = if (filtroTipo == null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
             filterTypes.forEach { tipo ->
@@ -196,30 +223,39 @@ fun FloorsScreen(
                                 getTypeIcon(tipo),
                                 contentDescription = null,
                                 modifier = Modifier.size(14.dp),
-                                tint = if (active) getTypeColor(tipo) else MutedForeground
+                                tint = if (active) getTypeColor(tipo) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(tipo, fontSize = 12.sp)
                         }
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = if (active) getTypeBgColor(tipo) else Muted,
-                        labelColor = if (active) getTypeColor(tipo) else MutedForeground
+                        containerColor = if (active) getTypeBgColor(tipo) else MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = if (active) getTypeColor(tipo) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
         }
 
-        // --- LISTA DE ESPACIOS (LazyColumn) ---
+        // --- LISTA DE ESPACIOS ---
         if (cargando) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BluePrimary)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (espaciosFiltrados.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Room, contentDescription = null, modifier = Modifier.size(52.dp), tint = Color(0xFFCBD5E1))
-                    Text("No hay espacios en este piso", color = MutedForeground, fontSize = 14.sp)
+                    Icon(
+                        imageVector = Icons.Default.Room,
+                        contentDescription = null,
+                        modifier = Modifier.size(52.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Text(
+                        "No hay espacios en este piso",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
                 }
             }
         } else {
@@ -237,16 +273,16 @@ fun FloorsScreen(
         }
     }
 }
-
 @Composable
 fun TarjetaEspacioPiso(espacio: Espacio, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -255,17 +291,38 @@ fun TarjetaEspacioPiso(espacio: Espacio, onClick: () -> Unit) {
                     .background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(getTypeIcon(espacio.tipo), contentDescription = null, tint = getTypeColor(espacio.tipo), modifier = Modifier.size(22.dp))
+                Icon(
+                    imageVector = getTypeIcon(espacio.tipo),
+                    contentDescription = null,
+                    tint = getTypeColor(espacio.tipo),
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(espacio.nombre, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Foreground)
-                Text(espacio.id.toString(), fontSize = 11.sp, color = MutedForeground)
+                Text(
+                    espacio.nombre,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    espacio.id.toString(),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(2.dp))
-                Box(modifier = Modifier
-                    .background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 8.dp, vertical = 2.dp)) {
-                    Text(espacio.tipo, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = getTypeColor(espacio.tipo))
+                Box(
+                    modifier = Modifier
+                        .background(getTypeBgColor(espacio.tipo), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        espacio.tipo,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = getTypeColor(espacio.tipo)
+                    )
                 }
             }
             AsyncImage(
@@ -276,7 +333,12 @@ fun TarjetaEspacioPiso(espacio: Espacio, onClick: () -> Unit) {
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFBDBDBD), modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

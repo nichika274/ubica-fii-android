@@ -77,7 +77,11 @@ fun ProfileScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         // Header azul
         Box(
             modifier = Modifier
@@ -96,8 +100,8 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Surface)
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -107,15 +111,15 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(56.dp)
                                 .clip(CircleShape)
-                                .background(BlueLight),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = BluePrimary, modifier = Modifier.size(32.dp))
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("Invitado", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Foreground)
-                            Text("Modo visitante", color = MutedForeground, fontSize = 13.sp)
+                            Text("Invitado", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Modo visitante", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         }
                     }
                 }
@@ -131,17 +135,17 @@ fun ProfileScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.DarkMode, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Tema oscuro", fontWeight = FontWeight.Medium, color = Foreground)
-                            Text("Activa el modo oscuro", fontSize = 12.sp, color = MutedForeground)
+                            Text("Tema oscuro", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Activa el modo oscuro", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(checked = isDarkTheme, onCheckedChange = { onToggleDarkTheme() })
                     }
@@ -157,7 +161,7 @@ fun ProfileScreen(
                     icon = Icons.Default.AdminPanelSettings,
                     title = "Administración",
                     subtitle = "Acceso restringido",
-                    iconColor = BluePrimary
+                    iconColor = MaterialTheme.colorScheme.primary
                 ) { mostrarDialogoAdmin = true }
             }
         }
@@ -168,7 +172,10 @@ fun ProfileScreen(
     if (mostrarFavoritos) {
         AlertDialog(
             onDismissRequest = { mostrarFavoritos = false },
-            title = { Text("Favoritos", fontWeight = FontWeight.Bold, color = BluePrimary) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Favoritos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
             text = {
                 if (listaFavoritos.isEmpty()) {
                     Box(
@@ -176,9 +183,9 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
+                            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("No tienes espacios favoritos.", color = MutedForeground, textAlign = TextAlign.Center)
+                            Text("No tienes espacios favoritos.", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                         }
                     }
                 } else {
@@ -192,7 +199,7 @@ fun ProfileScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(Icons.Default.Star, contentDescription = null, tint = BluePrimary, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         text = item.second,
@@ -206,14 +213,17 @@ fun ProfileScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { mostrarFavoritos = false }) { Text("Cerrar") } }
+            confirmButton = { TextButton(onClick = { mostrarFavoritos = false }) { Text("Cerrar", color = MaterialTheme.colorScheme.primary) } }
         )
     }
 
     if (mostrarRecientes) {
         AlertDialog(
             onDismissRequest = { mostrarRecientes = false },
-            title = { Text("Recientes", fontWeight = FontWeight.Bold, color = BluePrimary) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Recientes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
             text = {
                 if (listaRecientes.isEmpty()) {
                     Box(
@@ -221,9 +231,9 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
+                            Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("No hay espacios recientes.", color = MutedForeground, textAlign = TextAlign.Center)
+                            Text("No hay espacios recientes.", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                         }
                     }
                 } else {
@@ -237,7 +247,7 @@ fun ProfileScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(Icons.Default.History, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         text = item.second,
@@ -251,21 +261,28 @@ fun ProfileScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { mostrarRecientes = false }) { Text("Cerrar") } }
+            confirmButton = { TextButton(onClick = { mostrarRecientes = false }) { Text("Cerrar", color = MaterialTheme.colorScheme.primary) } }
         )
     }
 
     if (mostrarDialogoReporte) {
         AlertDialog(
             onDismissRequest = { mostrarDialogoReporte = false; textoReporte = "" },
-            title = { Text("Reportar un error", fontWeight = FontWeight.Bold, color = BluePrimary) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Reportar un error", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
             text = {
                 OutlinedTextField(
                     value = textoReporte,
                     onValueChange = { textoReporte = it },
                     placeholder = { Text("Describe el problema detalladamente...") },
                     modifier = Modifier.fillMaxWidth().height(120.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
                 )
             },
             confirmButton = {
@@ -281,16 +298,19 @@ fun ProfileScreen(
                         context.startActivity(Intent.createChooser(intent, "Enviar reporte vía..."))
                         mostrarDialogoReporte = false; textoReporte = ""
                     }
-                ) { Text("Enviar", color = BluePrimary, fontWeight = FontWeight.Bold) }
+                ) { Text("Enviar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { mostrarDialogoReporte = false; textoReporte = "" }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { mostrarDialogoReporte = false; textoReporte = "" }) { Text("Cancelar", color = MaterialTheme.colorScheme.primary) } }
         )
     }
 
     if (mostrarDialogoAdmin) {
         AlertDialog(
             onDismissRequest = { mostrarDialogoAdmin = false; pinIngresado = "" },
-            title = { Text("Acceso de Administrador", fontWeight = FontWeight.Bold, color = BluePrimary) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Acceso de Administrador", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
             text = {
                 OutlinedTextField(
                     value = pinIngresado,
@@ -298,16 +318,20 @@ fun ProfileScreen(
                     label = { Text("PIN de seguridad") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     if (pinIngresado == "1234") { mostrarDialogoAdmin = false; pinIngresado = ""; navigateToAdmin() }
                     else Toast.makeText(context, "PIN incorrecto", Toast.LENGTH_SHORT).show()
-                }) { Text("Entrar", color = BluePrimary, fontWeight = FontWeight.Bold) }
+                }) { Text("Entrar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { mostrarDialogoAdmin = false; pinIngresado = "" }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { mostrarDialogoAdmin = false; pinIngresado = "" }) { Text("Cancelar", color = MaterialTheme.colorScheme.primary) } }
         )
     }
 }
@@ -317,22 +341,27 @@ fun ProfileOptionCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    iconColor: Color = MutedForeground,
+    iconColor: Color? = null,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Medium, color = Foreground)
-                Text(subtitle, fontSize = 12.sp, color = MutedForeground)
+                Text(title, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFBDBDBD))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
         }
     }
 }

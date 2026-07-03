@@ -62,7 +62,7 @@ fun DetailScreen(
 
     if (cargando) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BluePrimary)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -75,10 +75,11 @@ fun DetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Imagen Principal (Hero Image)
         Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
+
             val imageModel = if (esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir")) {
                 File(esp.fotoUrl)
             } else {
@@ -192,23 +193,24 @@ fun DetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text(esp.nombre, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Foreground)
+                    Text(esp.nombre, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = BluePrimary)
+                        Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bloque ${esp.bloque} · ${getFloorLabel(esp.piso.toString())}", fontSize = 14.sp, color = MutedForeground)
+                        Text("Bloque ${esp.bloque} · ${getFloorLabel(esp.piso.toString())}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Box(modifier = Modifier.background(BlueLight, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                        Text(esp.id.toString(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BluePrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    Box(modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                        Text(esp.id.toString(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                     }
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text(esp.descripcion, fontSize = 14.sp, color = Color(0xFF374151), lineHeight = 22.sp)
+                    Text(esp.descripcion, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 22.sp)
                 }
             }
 
@@ -216,17 +218,18 @@ fun DetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Directions, contentDescription = null, tint = BluePrimary)
+                        Icon(Icons.Default.Directions, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cómo llegar", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Foreground)
+                        Text("Cómo llegar", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(esp.indicaciones, fontSize = 14.sp, color = MutedForeground, lineHeight = 21.sp)
+                    Text(esp.indicaciones, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 21.sp)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -236,7 +239,7 @@ fun DetailScreen(
                             .fillMaxWidth()
                             .height(220.dp)
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFFE8EDF2))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         val density = LocalDensity.current
                         val containerWidthPx = with(density) { maxWidth.toPx() }
@@ -267,7 +270,7 @@ fun DetailScreen(
                             modifier = Modifier
                                 .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
                                 .size(24.dp)
-                                .background(BluePrimary, CircleShape)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
                                 .border(3.dp, Color.White, CircleShape)
                         )
                     }
@@ -275,7 +278,7 @@ fun DetailScreen(
                     Text(
                         text = "Ubicación en plano (${getFloorLabel(esp.piso.toString())})",
                         fontSize = 12.sp,
-                        color = MutedForeground,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -286,17 +289,17 @@ fun DetailScreen(
                         onClick = { showPlanoDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = BluePrimary),
-                        border = BorderStroke(1.5.dp, BluePrimary)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(Icons.Default.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Ver plano en grande", color = BluePrimary, fontWeight = FontWeight.SemiBold)
+                        Text("Ver plano en grande", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
 
-            // Botones inferiores de Acción (Simplificado a 2)
+            // Botones inferiores de Acción
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -317,11 +320,11 @@ fun DetailScreen(
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
+                    Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Compartir", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Compartir", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -330,12 +333,12 @@ fun DetailScreen(
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BlueLight),
-                    border = BorderStroke(1.5.dp, BluePrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.Public, contentDescription = null, tint = BluePrimary)
+                    Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Ver en mapa", color = BluePrimary, fontWeight = FontWeight.Bold)
+                    Text("Ver en mapa", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -376,7 +379,7 @@ fun PlanoDialog(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.96f))
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.98f))
                 .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
@@ -429,7 +432,7 @@ fun PlanoDialog(
                 modifier = Modifier
                     .offset { IntOffset(markerX.toInt(), markerY.toInt()) }
                     .size(30.dp)
-                    .background(BluePrimary, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
                     .border(4.dp, Color.White, CircleShape)
             )
 

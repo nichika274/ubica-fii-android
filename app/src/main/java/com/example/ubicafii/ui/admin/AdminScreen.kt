@@ -100,9 +100,9 @@ fun AdminScreen(
                     editando = null
                     mostrarFormulario = true
                 },
-                containerColor = BluePrimary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar espacio")
             }
@@ -112,13 +112,18 @@ fun AdminScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header
+                // Header con Gradiente de la App
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(brush = Brush.verticalGradient(listOf(Blue900, Blue700)))
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Blue900, Blue700)   // ← Gradiente original
+                            )
+                        )
                         .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 20.dp)
                 ) {
                     Column {
@@ -127,43 +132,46 @@ fun AdminScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary)
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Administración", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text("Administración", color = MaterialTheme.colorScheme.onPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         }
-                        Text("${espacios.size} espacios registrados", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, modifier = Modifier.padding(start = 16.dp))
+                        Text("${espacios.size} espacios registrados", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f), fontSize = 13.sp, modifier = Modifier.padding(start = 16.dp))
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        // Fila de Filtros (Chips adaptados)
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            val isAllSelected = filtroBloque == "all"
                             FilterChip(
-                                selected = filtroBloque == "all",
+                                selected = isAllSelected,
                                 onClick = { filtroBloque = "all" },
                                 label = { Text("Todos", fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = if (filtroBloque == "all") Color.White else Color.White.copy(alpha = 0.18f),
-                                    labelColor = if (filtroBloque == "all") BluePrimary else Color.White,
-                                    selectedContainerColor = Color.White,
-                                    selectedLabelColor = BluePrimary
+                                    containerColor = if (isAllSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f),
+                                    labelColor = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
+                                    selectedContainerColor = MaterialTheme.colorScheme.surface,
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary
                                 ),
                                 border = null,
                                 shape = RoundedCornerShape(24.dp)
                             )
                             bloquesMap.keys.forEach { id ->
+                                val isIdSelected = filtroBloque == id
                                 FilterChip(
-                                    selected = filtroBloque == id,
+                                    selected = isIdSelected,
                                     onClick = { filtroBloque = id },
                                     label = { Text(id, fontSize = 12.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = if (filtroBloque == id) Color.White else Color.White.copy(alpha = 0.18f),
-                                        labelColor = if (filtroBloque == id) BluePrimary else Color.White,
-                                        selectedContainerColor = Color.White,
-                                        selectedLabelColor = BluePrimary
+                                        containerColor = if (isIdSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f),
+                                        labelColor = if (isIdSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
+                                        selectedContainerColor = MaterialTheme.colorScheme.surface,
+                                        selectedLabelColor = MaterialTheme.colorScheme.primary
                                     ),
                                     border = null,
                                     shape = RoundedCornerShape(24.dp)
@@ -183,7 +191,8 @@ fun AdminScreen(
                         Card(
                             shape = RoundedCornerShape(24.dp),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            colors = CardDefaults.cardColors(containerColor = Surface)
+                            border = if (isSystemInDarkTheme()) BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)) else null,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -196,7 +205,7 @@ fun AdminScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        getTypeIcon(espacio.tipo),
+                                        imageVector = getTypeIcon(espacio.tipo),
                                         contentDescription = null,
                                         tint = getTypeColor(espacio.tipo),
                                         modifier = Modifier.size(20.dp)
@@ -204,14 +213,14 @@ fun AdminScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(espacio.nombre, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Foreground)
-                                    Text("${espacio.id} · Bloque ${espacio.bloque} · ${getFloorLabel(espacio.piso.toString())}", fontSize = 11.sp, color = MutedForeground)
+                                    Text(espacio.nombre, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${espacio.id} · Bloque ${espacio.bloque} · ${getFloorLabel(espacio.piso.toString())}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 IconButton(onClick = {
                                     editando = espacio
                                     mostrarFormulario = true
                                 }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = BluePrimary)
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = {
                                     espacioAEliminar = espacio.id
@@ -300,12 +309,16 @@ fun SpaceFormScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Barra superior azul
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // Barra superior azul adaptada
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(brush = Brush.verticalGradient(listOf(Blue900, Blue700)))
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Blue900, Blue700)   // ← Gradiente original
+                    )
+                )
                 .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             Row(
@@ -314,16 +327,16 @@ fun SpaceFormScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onCancelar) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary)
                 }
                 Text(
                     text = if (espacio != null) "Editar espacio" else "Nuevo espacio",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onCancelar) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -336,36 +349,42 @@ fun SpaceFormScreen(
                 .padding(16.dp)
         ) {
             // ───── Nombre ─────
-            Text("Nombre del espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Nombre del espacio", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                placeholder = { Text("Ej: Aula 301", color = Color(0xFFBDBDBD)) },
+                placeholder = { Text("Ej: Aula 301") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
                 shape = RoundedCornerShape(24.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Código ─────
-            Text("Código", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Código", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = codigo,
                 onValueChange = { codigo = it },
-                placeholder = { Text("Ej: FII-A-301", color = Color(0xFFBDBDBD)) },
+                placeholder = { Text("Ej: FII-A-301") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = espacio == null,
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
                 shape = RoundedCornerShape(24.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Tipo de espacio ─────
-            Text("Tipo de espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Tipo de espacio", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
@@ -380,13 +399,26 @@ fun SpaceFormScreen(
                         onClick = { tipo = t },
                         label = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = getTypeIcon(t), contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) getTypeColor(t) else MutedForeground)
+                                Icon(
+                                    imageVector = getTypeIcon(t),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (selected) getTypeColor(t) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(text = t, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, color = if (selected) getTypeColor(t) else MutedForeground)
+                                Text(
+                                    text = t,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (selected) getTypeColor(t) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         },
-                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = getTypeBgColor(t)),
-                        border = if (selected) BorderStroke(1.5.dp, getTypeColor(t)) else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            selectedContainerColor = getTypeBgColor(t)
+                        ),
+                        border = if (selected) BorderStroke(1.5.dp, getTypeColor(t)) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(24.dp)
                     )
                 }
@@ -395,7 +427,7 @@ fun SpaceFormScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Bloque ─────
-            Text("Bloque", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Bloque", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -406,8 +438,13 @@ fun SpaceFormScreen(
                         selected = selected,
                         onClick = { bloque = id },
                         label = { Text(id, fontSize = 12.sp) },
-                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = BluePrimary, selectedLabelColor = Color.White, labelColor = MutedForeground),
-                        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(24.dp)
                     )
                 }
@@ -416,7 +453,7 @@ fun SpaceFormScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Piso ─────
-            Text("Piso", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Piso", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val floorOptions = listOf(
                     "Planta baja" to "0",
@@ -429,8 +466,13 @@ fun SpaceFormScreen(
                         selected = selected,
                         onClick = { piso = value },
                         label = { Text(label, fontSize = 12.sp) },
-                        colors = FilterChipDefaults.filterChipColors(containerColor = Muted.copy(alpha = 0.4f), selectedContainerColor = BluePrimary, selectedLabelColor = Color.White, labelColor = MutedForeground),
-                        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(24.dp)
                     )
                 }
@@ -439,35 +481,41 @@ fun SpaceFormScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Descripción ─────
-            Text("Descripción", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Descripción", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = descripcion,
                 onValueChange = { descripcion = it },
-                placeholder = { Text("Describe el espacio, capacidad, equipamiento...", color = Color(0xFFBDBDBD)) },
+                placeholder = { Text("Describe el espacio, capacidad, equipamiento...") },
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
                 shape = RoundedCornerShape(24.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Indicaciones para llegar ─────
-            Text("Indicaciones para llegar", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Indicaciones para llegar", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = indicaciones,
                 onValueChange = { indicaciones = it },
-                placeholder = { Text("Ej: Sube por la escalera principal, segunda puerta...", color = Color(0xFFBDBDBD)) },
+                placeholder = { Text("Ej: Sube por la escalera principal, segunda puerta...") },
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BluePrimary, unfocusedBorderColor = Color(0xFFE0E0E0)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
                 shape = RoundedCornerShape(24.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ───── Foto del espacio ─────
-            Text("Foto del espacio", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 6.dp))
+            Text("Foto del espacio", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -475,17 +523,17 @@ fun SpaceFormScreen(
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
                     enabled = !subiendoImagen,
-                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     if (subiendoImagen) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Subiendo...", color = Color.White)
+                        Text("Subiendo...", color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Seleccionar foto", color = Color.White)
+                        Text("Seleccionar foto", color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -495,7 +543,7 @@ fun SpaceFormScreen(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.LightGray)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         val imageModel = if (fotoLocalPath.startsWith("/") || fotoLocalPath.contains("filesDir")) {
                             File(fotoLocalPath)
@@ -514,15 +562,14 @@ fun SpaceFormScreen(
 
             // ───── Ubicación en el plano ─────
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Ubicación en el plano", fontWeight = FontWeight.Bold, color = Foreground, modifier = Modifier.padding(bottom = 4.dp))
+            Text("Ubicación en el plano", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 4.dp))
             Text(
                 "Arrastra el marcador azul hasta la posición exacta",
                 fontSize = 12.sp,
-                color = MutedForeground,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // Obtenemos el painterResource en el nivel superior de la Composable (Contexto Válido)
             val imagePainter = painterResource(id = planoResource)
 
             BoxWithConstraints(
@@ -530,7 +577,7 @@ fun SpaceFormScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFFE8EDF2))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .pointerInput(Unit) {
                         detectDragGestures { change, dragAmount ->
                             change.consume()
@@ -547,7 +594,6 @@ fun SpaceFormScreen(
                             val fitOffsetX = (containerWidthPx - drawnWidth) / 2f
                             val fitOffsetY = (containerHeightPx - drawnHeight) / 2f
 
-                            // Usamos las variables nítidas del painter de arriba
                             val currentXPx = fitOffsetX + (coordenadaX * drawnWidth) + dragAmount.x
                             val currentYPx = fitOffsetY + (coordenadaY * drawnHeight) + dragAmount.y
 
@@ -588,49 +634,35 @@ fun SpaceFormScreen(
                     Box(
                         modifier = Modifier
                             .size(16.dp)
-                            .background(BluePrimary, CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "X: ${String.format("%.0f", coordenadaX * 100)}%, Y: ${String.format("%.0f", coordenadaY * 100)}%",
-                fontSize = 11.sp,
-                color = MutedForeground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Botón Guardar
+            // Botón de guardar
             Button(
                 onClick = {
-                    if (nombre.isNotBlank() && codigo.isNotBlank()) {
-                        val nuevo = Espacio(
-                            id = codigo.toIntOrNull() ?: 0,
-                            nombre = nombre,
-                            tipo = tipo,
-                            piso = piso.toIntOrNull() ?: 1,
-                            descripcion = descripcion,
-                            fotoUrl = fotoLocalPath,
-                            indicaciones = indicaciones,
-                            bloque = bloque,
-                            coordenadaX = coordenadaX,
-                            coordenadaY = coordenadaY
-                        )
-                        onGuardar(nuevo)
-                    }
+                    val nuevoEspacio = Espacio(
+                        id = if (codigo.isNotEmpty()) codigo.toIntOrNull() ?: 0 else 0,
+                        nombre = nombre,
+                        tipo = tipo,
+                        piso = piso.toIntOrNull() ?: 0,
+                        bloque = bloque,
+                        descripcion = descripcion,
+                        indicaciones = indicaciones,
+                        fotoUrl = fotoLocalPath,
+                        coordenadaX = coordenadaX,
+                        coordenadaY = coordenadaY
+                    )
+                    onGuardar(nuevoEspacio)
                 },
-                enabled = !subiendoImagen,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
+                enabled = nombre.isNotEmpty() && (espacio != null || codigo.isNotEmpty()),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Guardar Espacio", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

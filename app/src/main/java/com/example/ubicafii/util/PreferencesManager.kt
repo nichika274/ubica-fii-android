@@ -7,6 +7,7 @@ object PreferencesManager {
     private const val PREFS_NAME = "ubicafii_prefs"
     private const val KEY_FAVORITES = "favorites"
     private const val KEY_RECENTS = "recents"
+    private const val KEY_DARK_MODE = "dark_mode"
     private const val MAX_RECENTS = 20
 
     private fun getPrefs(context: Context): SharedPreferences =
@@ -49,5 +50,32 @@ object PreferencesManager {
         recents.add(0, id) // Añade al principio
         if (recents.size > MAX_RECENTS) recents.removeAt(recents.size - 1)
         getPrefs(context).edit().putString(KEY_RECENTS, recents.joinToString(",")).apply()
+    }
+
+    // ---------- Búsquedas recientes ----------
+    fun getSearchRecents(context: Context): List<String> {
+        val prefs = getPrefs(context)
+        return prefs.getString("search_recents", null)
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?: emptyList()
+    }
+
+    fun addSearchRecent(context: Context, query: String) {
+        val recents = getSearchRecents(context).toMutableList()
+        recents.remove(query) // evita duplicados
+        recents.add(0, query)
+        if (recents.size > 10) recents.removeAt(recents.size - 1)
+        getPrefs(context).edit().putString("search_recents", recents.joinToString(",")).apply()
+    }
+
+    // ---------- Configuración de Apariencia ----------
+    fun isDarkMode(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_DARK_MODE, false)
+    }
+
+    fun setDarkMode(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_DARK_MODE, enabled).apply()
     }
 }

@@ -27,7 +27,7 @@ import com.example.ubicafii.ui.components.getTypeIcon
 
 @Composable
 fun ExploreScreen(
-    navigateToDetail: (String) -> Unit,
+    navigateToDetail: (Int) -> Unit,
     viewModel: ExploreViewModel = viewModel()
 ) {
     val categorias = listOf(
@@ -42,7 +42,11 @@ fun ExploreScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val espaciosFiltrados by viewModel.filteredSpaces.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         // Header azul (igual que en HomeScreen y FloorsScreen)
         Box(
             modifier = Modifier
@@ -76,7 +80,7 @@ fun ExploreScreen(
                     "Categorías",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Foreground
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 val rows = categorias.chunked(3)
@@ -91,9 +95,9 @@ fun ExploreScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable { viewModel.selectCategory(tipo) },
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) getTypeBgColor(tipo) else Surface
+                                    containerColor = if (isSelected) getTypeBgColor(tipo) else MaterialTheme.colorScheme.surface
                                 ),
                                 border = if (isSelected) BorderStroke(1.5.dp, getTypeColor(tipo)) else null
                             ) {
@@ -106,7 +110,7 @@ fun ExploreScreen(
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = tipo,
-                                        tint = if (isSelected) getTypeColor(tipo) else MutedForeground,
+                                        tint = if (isSelected) getTypeColor(tipo) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(28.dp)
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
@@ -114,7 +118,7 @@ fun ExploreScreen(
                                         text = tipo,
                                         fontSize = 12.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) getTypeColor(tipo) else MutedForeground
+                                        color = if (isSelected) getTypeColor(tipo) else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -134,7 +138,7 @@ fun ExploreScreen(
                         text = "Resultados para \"$selectedCategory\"",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Foreground,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
@@ -144,7 +148,7 @@ fun ExploreScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No se encontraron espacios de este tipo.", color = MutedForeground)
+                            Text("No se encontraron espacios de este tipo.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {
@@ -152,10 +156,11 @@ fun ExploreScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { navigateToDetail(espacio.id.toString()) },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                .clickable { navigateToDetail(espacio.id) },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -180,18 +185,18 @@ fun ExploreScreen(
                                         espacio.nombre,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Foreground
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         "Bloque ${espacio.bloque} · Piso ${espacio.piso}",
                                         fontSize = 12.sp,
-                                        color = MutedForeground
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 Icon(
                                     Icons.Default.ChevronRight,
                                     contentDescription = null,
-                                    tint = Color(0xFFBDBDBD)
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 )
                             }
                         }

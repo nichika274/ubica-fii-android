@@ -91,4 +91,6 @@ dependencies {
 
     // Coil (Carga de imágenes vía URL)
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

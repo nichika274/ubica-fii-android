@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -31,7 +32,9 @@ import com.example.ubicafii.ui.theme.home.HomeViewModel
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.ubicafii.R
+
 // Datos de bloques simulados
 data class Bloque(
     val id: String,
@@ -44,9 +47,9 @@ val bloques = listOf(
     Bloque("A", "Bloque A", "https://cdn.phototourl.com/member/2026-06-17-7475f8ec-7748-4107-94dd-236552ce29c9.png", listOf("Planta baja", "Piso 1", "Piso 2")),
     Bloque("B", "Bloque B", "https://cdn.phototourl.com/member/2026-06-17-b6e99229-89b5-4fc9-8c18-25e028562473.png", listOf("Planta baja", "Piso 1", "Piso 2")),
     Bloque("C", "Bloque C", "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png", listOf("Planta baja", "Piso 1", "Piso 2")),
-    Bloque("D", "Bloque D", "https://cdn.phototourl.com/member/2026-06-17-552c0410-63d0-465a-8eab-0089c0cd6e65.png", listOf("Planta baja", "Piso 1")),
-    Bloque("E", "Bloque E", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Planta baja", "Piso 1")),
-    Bloque("F", "Bloque F", "https://images.unsplash.com/photo-1774131231781-62ac008585bf?w=400&h=250&fit=crop&auto=format", listOf("Planta baja", "Piso 1")),
+    Bloque("D", "Bloque D", "https://cdn.phototourl.com/member/2026-07-02-53d0580a-fed3-4904-bc0a-87b25208e09f.jpg", listOf("Planta baja", "Piso 1")),
+    Bloque("E", "Bloque E", "https://cdn.phototourl.com/member/2026-07-02-87b04a35-f2c7-4ce3-a2f3-8e197bd55039.jpg", listOf("Planta baja")),
+    Bloque("F", "Bloque F", "https://cdn.phototourl.com/member/2026-07-02-02f8fea9-34c2-45b9-9151-7b8d21e18790.jpg", listOf("Planta baja")),
     Bloque("G", "Bloque G", "https://cdn.phototourl.com/member/2026-06-17-898757d9-9bea-4f1c-8ae8-ae81c2a0ab76.jpg", listOf("Planta baja", "Piso 1"))
 )
 
@@ -55,13 +58,14 @@ val frequentNames = listOf(
     "Fueiist",
     "Decanato"
 )
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToSearch: () -> Unit,
     onNavigateToBlocks: (String) -> Unit,
     onNavigateToAllBlocks: () -> Unit,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val espacios by viewModel.espacios.collectAsState()
@@ -84,25 +88,24 @@ fun HomeScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header azul con gradiente
+            // Header con gradiente adaptativo del tema
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(189.dp) // Reduce la altura del fondo azul
+                    .height(189.dp)
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(Blue900, Blue700)
                         )
                     )
-            )
-                {
-                Column {
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -110,14 +113,12 @@ fun HomeScreen(
                     ) {
                         Spacer(modifier = Modifier.width(0.dp))
 
-
                         Column(
                             modifier = Modifier.offset(
-                                x = (-90).dp,   // Derecha (+) | Izquierda (-)
-                                y = 10.dp     // Abajo (+) | Arriba (-)
+                                x = (-90).dp,
+                                y = 10.dp
                             )
-                        )  {
-
+                        ) {
                             Text(
                                 "Bienvenido a",
                                 color = Color.White.copy(alpha = 0.7f),
@@ -129,7 +130,6 @@ fun HomeScreen(
                                 color = Color.White,
                                 fontSize = 23.sp,
                                 fontWeight = FontWeight.Bold
-
                             )
                         }
 
@@ -140,66 +140,56 @@ fun HomeScreen(
                                 painter = painterResource(R.drawable.logo_ubicafii),
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .size(113.dp)
+                                    .size(100.dp)
                                     .offset(
-                                        x = (-25).dp,            //Derecha (+) | Izquierda (-)
-                                        y = 10.dp              // Abajo (+) | Arriba (-)
+                                        x = (-25).dp,
+                                        y = 10.dp
                                     )
                                     .graphicsLayer {
                                         scaleX = 1.4f
                                         scaleY = 1.4f
                                     }
                             )
-
-
                         }
-
-
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Barra de búsqueda circular usando OutlinedTextField simulado
-                    Box(
+                    // Barra de búsqueda simulada fija (Soluciona el texto partido)
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(48.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onNavigateToSearch() }
+                            ) { onNavigateToSearch() },
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
-                            readOnly = true,
-                            enabled = false,
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            placeholder = {
-                                Text(
-                                    text = "Buscar aula, laboratorio, oficina…",
-                                    color = Color(0xFFBDBDBD),
-                                    fontSize = 14.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Buscar",
-                                    tint = Color(0xFF9E9E9E),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledContainerColor = Color.White,
-                                disabledBorderColor = Color.Transparent,
-                                disabledTextColor = Color.White,
-                                disabledPlaceholderColor = Color(0xFFBDBDBD),
-                                disabledLeadingIconColor = Color(0xFF9E9E9E)
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Buscar",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Buscar aula, laboratorio, oficina…",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -212,8 +202,18 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Bloques", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Foreground)
-                    Text("${bloques.size} bloques", fontSize = 12.sp, color = BluePrimary, fontWeight = FontWeight.Medium)
+                    Text(
+                        "Bloques",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        "${bloques.size} bloques",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -275,7 +275,7 @@ fun HomeScreen(
                     "Espacios frecuentes",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Foreground
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -283,14 +283,14 @@ fun HomeScreen(
                     Text(
                         "No hay espacios frecuentes disponibles.",
                         fontSize = 13.sp,
-                        color = MutedForeground,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 } else {
                     frecuentes.forEach { espacio ->
                         TarjetaEspacioFrecuente(
                             espacio = espacio,
-                            onClick = { onNavigateToDetail(espacio.id.toString()) }
+                            onClick = { onNavigateToDetail(espacio.id) }
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                     }
@@ -303,7 +303,7 @@ fun HomeScreen(
                     "Todos los bloques",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Foreground
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -318,8 +318,9 @@ fun HomeScreen(
                                     .weight(1f)
                                     .clickable { onNavigateToBlocks(bloque.id) },
                                 shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = Surface),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                             ) {
                                 Row(
                                     modifier = Modifier.padding(12.dp),
@@ -328,14 +329,17 @@ fun HomeScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(40.dp)
-                                            .background(BlueLight, RoundedCornerShape(12.dp)),
+                                            .background(
+                                                MaterialTheme.colorScheme.primaryContainer,
+                                                RoundedCornerShape(12.dp)
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             bloque.id,
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = BluePrimary
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -344,12 +348,12 @@ fun HomeScreen(
                                             bloque.nombre,
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Foreground
+                                            color = MaterialTheme.colorScheme.onBackground
                                         )
                                         Text(
                                             "${bloque.pisos.size} pisos",
                                             fontSize = 11.sp,
-                                            color = MutedForeground
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -370,17 +374,17 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter),
-                color = BluePrimary,
+                color = MaterialTheme.colorScheme.primary,
                 trackColor = Color.Transparent
             )
         }
 
-        // --- BANNER DE ERROR EN UN SNACKBAR INFERIOR FLOATING RECONFIGURADO ---
+        // --- BANNER DE ERROR ---
         error?.let { mensajeError ->
             Snackbar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 76.dp), // Ajustado el margen inferior para no tapar barras de navegación si usas scaffold
+                    .padding(horizontal = 16.dp, vertical = 76.dp),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 action = {
@@ -423,8 +427,9 @@ fun TarjetaEspacioFrecuente(espacio: Espacio, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -449,12 +454,12 @@ fun TarjetaEspacioFrecuente(espacio: Espacio, onClick: () -> Unit) {
                     espacio.nombre,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Foreground
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     "Bloque ${espacio.bloque} · Piso ${espacio.piso}",
                     fontSize = 12.sp,
-                    color = MutedForeground
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             AsyncImage(
@@ -466,7 +471,11 @@ fun TarjetaEspacioFrecuente(espacio: Espacio, onClick: () -> Unit) {
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFBDBDBD))
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
     }
 }

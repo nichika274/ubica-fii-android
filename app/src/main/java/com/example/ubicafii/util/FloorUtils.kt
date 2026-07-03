@@ -23,6 +23,18 @@ fun getFloorPlanResource(bloque: String, piso: String): Int {
             if (piso == "0") return R.drawable.plano_bloque_d_planta_baja
             if (piso == "1") return R.drawable.plano_bloque_d_primera_planta
         }
+        "E" -> {
+            if (piso == "0") return R.drawable.plano_bloque_d_planta_baja
+            if (piso == "1") return R.drawable.plano_bloque_d_primera_planta
+        }
+        "F" -> {
+            if (piso == "0") return R.drawable.plano_bloque_d_planta_baja
+            if (piso == "1") return R.drawable.plano_bloque_d_primera_planta
+        }
+        "G" -> {
+            if (piso == "0") return R.drawable.plano_bloque_g_planta_baja
+            if (piso == "1") return R.drawable.plano_bloque_g_primera_planta
+        }
     }
 
     // --- Planos genéricos por piso (fallback) ---

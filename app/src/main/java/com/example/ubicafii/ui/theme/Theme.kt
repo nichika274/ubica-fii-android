@@ -38,19 +38,18 @@ private val LightDefaultColors = lightColorScheme(
 )
 
 private val DarkDefaultColors = darkColorScheme(
-    primary = Color(0xFF90CAF9),
-    onPrimary = Color(0xFF0D47A1),
-
+    primary = Color(0xFF90CAF9),          // Azul claro
+    onPrimary = Color(0xFF0D47A1),        // Azul oscuro para contraste
     primaryContainer = Color(0xFF1565C0),
     onPrimaryContainer = Color.White,
 
     secondary = Color(0xFF90CAF9),
     onSecondary = Color(0xFF0D47A1),
 
-    background = Color(0xFF121212),
+    background = Color(0xFF121212),       // Fondo oscuro estándar
     onBackground = Color.White,
 
-    surface = Color(0xFF1E1E1E),
+    surface = Color(0xFF1E1E1E),          // Superficies elevadas
     onSurface = Color.White,
 
     surfaceVariant = Color(0xFF2D2D2D),
@@ -72,13 +71,8 @@ fun UbicaFIITheme(
         when {
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
-                if (darkTheme) {
-                    dynamicDarkColorScheme(context)
-                } else {
-                    dynamicLightColorScheme(context)
-                }
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
-
             darkTheme -> DarkDefaultColors
             else -> LightDefaultColors
         }
