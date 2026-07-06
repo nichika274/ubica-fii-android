@@ -36,6 +36,7 @@ import com.example.ubicafii.ui.components.getTypeBgColor
 import com.example.ubicafii.ui.components.getTypeColor
 import com.example.ubicafii.ui.components.getTypeIcon
 import com.example.ubicafii.ui.theme.*
+import com.example.ubicafii.util.ImageCache
 import com.example.ubicafii.util.PreferencesManager
 import com.example.ubicafii.util.getFloorLabel
 import com.example.ubicafii.util.getFloorPlanResource
@@ -80,10 +81,33 @@ fun DetailScreen(
         // Imagen Principal (Hero Image)
         Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
 
-            val imageModel = if (esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir")) {
-                File(esp.fotoUrl)
-            } else {
-                esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
+            // ─── CACHÉ DE IMÁGENES OFFLINE ───
+            val cachedFile = remember(esp.fotoUrl) {
+                if (esp.fotoUrl.isNotBlank()) {
+                    ImageCache.getCachedFile(context, esp.fotoUrl.hashCode().toString())
+                } else null
+            }
+            var localImageModel by remember { mutableStateOf<Any?>(cachedFile ?: esp.fotoUrl) }
+
+            // Si no está en caché, descargarla en segundo plano
+            LaunchedEffect(esp.fotoUrl) {
+                if (esp.fotoUrl.isNotBlank() && cachedFile == null) {
+                    val file = ImageCache.cacheImage(
+                        context = context,
+                        imageUrl = esp.fotoUrl,
+                        imageId = esp.fotoUrl.hashCode().toString()
+                    )
+                    if (file != null) {
+                        localImageModel = file
+                    }
+                }
+            }
+
+            // Modelo final que se pasa a AsyncImage
+            val imageModel = when {
+                localImageModel is File -> localImageModel
+                esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir") -> File(esp.fotoUrl)
+                else -> esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
             }
 
             AsyncImage(

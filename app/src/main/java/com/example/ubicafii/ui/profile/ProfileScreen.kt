@@ -327,7 +327,7 @@ fun ProfileScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    if (pinIngresado == "1234") { mostrarDialogoAdmin = false; pinIngresado = ""; navigateToAdmin() }
+                    if (pinIngresado == "7726") { mostrarDialogoAdmin = false; pinIngresado = ""; navigateToAdmin() }
                     else Toast.makeText(context, "PIN incorrecto", Toast.LENGTH_SHORT).show()
                 }) { Text("Entrar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
             },

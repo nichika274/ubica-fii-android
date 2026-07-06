@@ -76,11 +76,34 @@ fun CampusMapDialog(
     }
 
     val bloqueActual = bloques.find { it.bloque == espacio.bloque }
-    val bloqueANodo = mapOf("A" to "pasilloA", "B" to "pasilloB", "C" to "pasilloC", "G" to "bloqueG")
+    val bloqueANodo = mapOf(
+        "A" to "pasilloA",
+        "B" to "pasilloB",
+        "C" to "pasilloC",
+        "D" to "entrada_DFE",
+        "E" to "entrada_DFE",
+        "F" to "entrada_DFE",
+        "G" to "bloqueG"
+    )
 
     val ruta = remember(origenSeleccionado, bloqueActual) {
         val destinoId = bloqueANodo[bloqueActual?.bloque]
-        if (destinoId != null) encontrarRuta(origenSeleccionado, destinoId) else null
+
+        if (destinoId != null) {
+            val r = encontrarRuta(origenSeleccionado, destinoId)
+
+            println("===================================")
+            println("Origen: $origenSeleccionado")
+            println("Bloque: ${bloqueActual?.bloque}")
+            println("Destino: $destinoId")
+            println("Ruta:")
+            r?.forEach {
+                println("${it.id} -> ${it.nombre}")
+            }
+            println("===================================")
+
+            r
+        } else null
     }
 
     val nombreOrigen = GrafoNavegacion.nodos.find { it.id == origenSeleccionado }?.nombre ?: "Entrada"

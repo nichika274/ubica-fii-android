@@ -52,7 +52,7 @@ fun OriginSelectorDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.heightIn(max = 400.dp)
             ) {
-                items(GrafoNavegacion.nodos) { nodo ->
+                items(GrafoNavegacion.nodos.filter { it.mostrarEnSelector }) { nodo ->
                     val selected = origenSeleccionado == nodo.id
                     val icono = iconosPorNodo[nodo.id] ?: Icons.Default.Place
 
