@@ -81,33 +81,27 @@ fun DetailScreen(
         // Imagen Principal (Hero Image)
         Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
 
-            // ─── CACHÉ DE IMÁGENES OFFLINE ───
+            // 1. Intentar buscar si la foto ya se guardó localmente en el dispositivo
             val cachedFile = remember(esp.fotoUrl) {
-                if (esp.fotoUrl.isNotBlank()) {
-                    ImageCache.getCachedFile(context, esp.fotoUrl.hashCode().toString())
-                } else null
+                if (esp.fotoUrl.isNotBlank()) ImageCache.getCachedFile(context, esp.fotoUrl.hashCode().toString()) else null
             }
-            var localImageModel by remember { mutableStateOf<Any?>(cachedFile ?: esp.fotoUrl) }
 
-            // Si no está en caché, descargarla en segundo plano
+            // 2. Tu modelo de carga original intacto (Usa el archivo local si existe, si no, va a Render)
+            val imageModel = when {
+                cachedFile != null -> cachedFile
+                esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir") -> File(esp.fotoUrl)
+                else -> esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
+            }
+
+            // 3. Descarga silenciosa en segundo plano. Al cargarse de Render por primera vez, se guarda en el cel.
             LaunchedEffect(esp.fotoUrl) {
-                if (esp.fotoUrl.isNotBlank() && cachedFile == null) {
-                    val file = ImageCache.cacheImage(
+                if (esp.fotoUrl.isNotBlank() && cachedFile == null && esp.fotoUrl.startsWith("http")) {
+                    ImageCache.cacheImage(
                         context = context,
                         imageUrl = esp.fotoUrl,
                         imageId = esp.fotoUrl.hashCode().toString()
                     )
-                    if (file != null) {
-                        localImageModel = file
-                    }
                 }
-            }
-
-            // Modelo final que se pasa a AsyncImage
-            val imageModel = when {
-                localImageModel is File -> localImageModel
-                esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir") -> File(esp.fotoUrl)
-                else -> esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
             }
 
             AsyncImage(
@@ -219,7 +213,9 @@ fun DetailScreen(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                border = if (isSystemInDarkTheme())
+                    BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                else null
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(esp.nombre, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
