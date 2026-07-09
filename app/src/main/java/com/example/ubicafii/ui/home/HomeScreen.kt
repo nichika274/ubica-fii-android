@@ -1,5 +1,6 @@
 package com.example.ubicafii.ui.home
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -72,8 +73,12 @@ fun HomeScreen(
     val error by viewModel.error.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
 
+    Log.d("HomeScreen", "Recomposición de HomeScreen, espacios.size: ${espacios.size}, cargando: $cargando")
+
     LaunchedEffect(Unit) {
-        viewModel.cargarEspacios()
+        if (viewModel.espacios.value.isEmpty()) {
+            viewModel.cargarEspacios()
+        }
     }
 
     LaunchedEffect(espacios) {
@@ -98,14 +103,18 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(189.dp)
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(Blue900, Blue700)
                         )
                     )
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp) // Un pequeño respiro abajo antes de la barra de búsqueda
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -155,7 +164,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Barra de búsqueda simulada fija (Soluciona el texto partido)
+                    // Barra de búsqueda simulada fija
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()

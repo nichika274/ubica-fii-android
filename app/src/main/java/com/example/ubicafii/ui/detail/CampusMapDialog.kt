@@ -1,5 +1,6 @@
 package com.example.ubicafii.ui.detail
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,11 +27,11 @@ import com.example.ubicafii.data.api.RetrofitClient
 import com.example.ubicafii.data.model.BloqueMapa
 import com.example.ubicafii.data.model.Espacio
 import com.example.ubicafii.data.model.PuntoInteres
+import com.example.ubicafii.data.repository.MapDataRepository // 🛠️ NUEVO IMPORT
 import com.example.ubicafii.ui.theme.BluePrimary
 import com.example.ubicafii.util.GrafoNavegacion
 import com.example.ubicafii.util.encontrarRuta
 import kotlinx.coroutines.launch
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,11 +39,20 @@ fun CampusMapDialog(
     espacio: Espacio,
     onDismiss: () -> Unit
 ) {
-    var bloques by remember { mutableStateOf<List<BloqueMapa>>(emptyList()) }
-    var puntosInteres by remember { mutableStateOf<List<PuntoInteres>>(emptyList()) }
+    val context = LocalContext.current
+    // 🛠️ Inicializamos el repositorio persistente offline-first
+    val mapRepo = remember { MapDataRepository(context) }
+
+    // 🛠️ Cargamos la caché local de forma instantánea al iniciar el estado
+    var bloques by remember { mutableStateOf(mapRepo.getBloques()) }
+    var puntosInteres by remember { mutableStateOf(mapRepo.getPuntosInteres()) }
+
     var origenSeleccionado by remember { mutableStateOf("entrada") }
     var mostrarSelectorOrigen by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
+
+    // 🛠️ Si ya hay datos en la caché, no obligamos al usuario a ver la pantalla de carga
+    var isLoading by remember { mutableStateOf(bloques.isEmpty() && puntosInteres.isEmpty()) }
+
     var mostrarAyuda by remember { mutableStateOf(false) }
     var centrarTrigger by remember { mutableStateOf(0) }
 
@@ -57,21 +68,32 @@ fun CampusMapDialog(
     val imgHeight = imagePainter.intrinsicSize.height.toFloat()
 
     LaunchedEffect(Unit) {
-        // Ejecutar animación de entrada de forma paralela a la carga
-        scope.launch {
-            dialogScale.animateTo(1f, animationSpec = tween(400))
-        }
-        scope.launch {
-            dialogAlpha.animateTo(1f, animationSpec = tween(300))
+        // Ejecutar animación de entrada de forma paralela
+        scope.launch { dialogScale.animateTo(1f, animationSpec = tween(400)) }
+        scope.launch { dialogAlpha.animateTo(1f, animationSpec = tween(300)) }
+
+        // Si cargó desde la caché, disparamos el centrado inicial rápidamente
+        if (!isLoading) {
+            centrarTrigger = 1
         }
 
         scope.launch {
-            try {
-                bloques = RetrofitClient.instance.getBloques()
-                puntosInteres = RetrofitClient.instance.getPuntosInteres()
-            } catch (_: Exception) { }
+            Log.d("CampusMapDialog", "Iniciando actualización silenciosa desde la red...")
+
+            // 🛠️ Intentamos actualizar la caché local desde la red en segundo plano
+            val api = RetrofitClient.instance
+            val bloquesActualizados = mapRepo.fetchAndCacheBloques(api)
+            val puntosActualizados = mapRepo.fetchAndCachePuntosInteres(api)
+
+            // Si la red trajo datos nuevos con éxito, refrescamos los estados de Jetpack Compose
+            if (bloquesActualizados || puntosActualizados) {
+                Log.d("CampusMapDialog", "Caché de mapas actualizada con éxito desde la API.")
+                bloques = mapRepo.getBloques()
+                puntosInteres = mapRepo.getPuntosInteres()
+            }
+
             isLoading = false
-            centrarTrigger = 1
+            if (centrarTrigger == 0) centrarTrigger = 1
         }
     }
 
@@ -88,21 +110,8 @@ fun CampusMapDialog(
 
     val ruta = remember(origenSeleccionado, bloqueActual) {
         val destinoId = bloqueANodo[bloqueActual?.bloque]
-
         if (destinoId != null) {
-            val r = encontrarRuta(origenSeleccionado, destinoId)
-
-            println("===================================")
-            println("Origen: $origenSeleccionado")
-            println("Bloque: ${bloqueActual?.bloque}")
-            println("Destino: $destinoId")
-            println("Ruta:")
-            r?.forEach {
-                println("${it.id} -> ${it.nombre}")
-            }
-            println("===================================")
-
-            r
+            encontrarRuta(origenSeleccionado, destinoId)
         } else null
     }
 
@@ -147,10 +156,7 @@ fun CampusMapDialog(
 
     Dialog(
         onDismissRequest = {
-            // Animación de salida antes de cerrar
-            scope.launch {
-                dialogScale.animateTo(0.85f, animationSpec = tween(250))
-            }
+            scope.launch { dialogScale.animateTo(0.85f, animationSpec = tween(250)) }
             scope.launch {
                 dialogAlpha.animateTo(0f, animationSpec = tween(200))
                 onDismiss()
@@ -159,7 +165,6 @@ fun CampusMapDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Scaffold(
-            // Aplicamos las propiedades animadas de escala y fundido al contenedor raíz
             modifier = Modifier.graphicsLayer(
                 scaleX = dialogScale.value,
                 scaleY = dialogScale.value,
@@ -199,7 +204,7 @@ fun CampusMapDialog(
                                 bloqueActual = bloqueActual,
                                 espacioNombre = espacio.nombre,
                                 centrarTrigger = centrarTrigger,
-                                origenId = origenSeleccionado, // Pasamos el ID para animar el origen
+                                origenId = origenSeleccionado,
                                 modifier = Modifier.fillMaxSize()
                             )
 
@@ -215,7 +220,6 @@ fun CampusMapDialog(
                             }
                         }
 
-                        // 🏁 Animación de entrada de la tarjeta inferior (Slide + Fade)
                         AnimatedVisibility(
                             visible = !isLoading,
                             enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
@@ -235,6 +239,7 @@ fun CampusMapDialog(
         }
     }
 }
+
 @Composable
 fun LeyendaItem(color: Color, texto: String) {
     Row(
@@ -244,7 +249,7 @@ fun LeyendaItem(color: Color, texto: String) {
         Box(
             modifier = Modifier
                 .size(14.dp)
-                .background(color, androidx.compose.foundation.shape.RoundedCornerShape(7.dp))
+                .background(color, RoundedCornerShape(7.dp))
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(texto, style = MaterialTheme.typography.bodyMedium)

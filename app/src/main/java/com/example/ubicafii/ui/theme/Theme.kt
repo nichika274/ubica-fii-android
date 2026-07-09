@@ -64,11 +64,12 @@ private val DarkDefaultColors = darkColorScheme(
 @Composable
 fun UbicaFIITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // <-- CAMBIADO DE TRUE A FALSE AQUÍ
     content: @Composable () -> Unit
 ) {
     val colorScheme: ColorScheme =
         when {
+            // Ahora solo usará colores dinámicos si tú lo fuerzas explícitamente
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

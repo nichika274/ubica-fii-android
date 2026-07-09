@@ -1,6 +1,7 @@
 package com.example.ubicafii.ui.theme.home
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ubicafii.data.model.Espacio
@@ -41,14 +42,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
+            // [MODIFICADO]: Evaluamos si ya tenemos datos guardados en memoria
+            val tieneDatosPrevios = _espacios.value.isNotEmpty()
+
+            Log.d("HomeViewModel", "cargarEspacios llamado, tieneDatosPrevios: $tieneDatosPrevios, _espacios.size: ${_espacios.value.size}")
+
             repository.obtenerEspaciosFlow(piso, tipo)
                 .onStart {
-                    // Al iniciar el flujo limpiamos errores y encendemos el loader principal
-                    _cargando.value = true
                     _error.value = null
+                    // Solo activamos el esqueleto/loader principal si la app está totalmente vacía
+                    if (!tieneDatosPrevios) {
+                        _cargando.value = true
+                    } else {
+                        // Si ya hay datos, mostramos una actualización silenciosa
+                        _actualizando.value = true
+                    }
                 }
                 .catch { _ ->
-                    // Captura errores inesperados del flujo
                     _cargando.value = false
                     _actualizando.value = false
                     if (_espacios.value.isEmpty()) {
@@ -56,36 +66,32 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 .collect { lista ->
-                    // Actualizamos la lista con la emisión que llegue (caché o remoto)
+                    // Actualizamos la lista de inmediato sin vaciar la pantalla
                     _espacios.value = lista
 
                     if (_cargando.value) {
-                        // Si es la PRIMERA emisión (normalmente la caché)
+                        // Si es la PRIMERA emisión absoluta sin datos previos
                         _cargando.value = false
-                        // Si hay datos locales, asumimos que se inicia la búsqueda remota silenciosa
                         if (lista.isNotEmpty()) {
                             _actualizando.value = true
                         }
                     } else {
-                        // Si es la SEGUNDA emisión (datos frescos de red exitosos)
+                        // Si ya terminó de actualizarse por completo desde la red
                         _actualizando.value = false
                         _error.value = null
                     }
 
-                    // Validación de estados vacíos al terminar de procesar la emisión actual
-                    evaluarEstadoVacio()
+                    // Validación inteligente de estados vacíos
+                    evaluarEstadoVacio(tieneDatosPrevios)
                 }
         }
     }
 
-    private fun evaluarEstadoVacio() {
-        if (_espacios.value.isEmpty()) {
-            _actualizando.value = false
+    private fun evaluarEstadoVacio(tieneDatosPrevios: Boolean) {
+        // Solo disparamos el error de "Sin conexión" si realmente no hay nada en memoria
+        // Y tampoco se logró traer nada en este intento.
+        if (_espacios.value.isEmpty() && !_cargando.value && !_actualizando.value) {
             _error.value = "📴 Sin conexión - No hay datos guardados localmente todavía."
         }
-    }
-
-    fun limpiarError() {
-        _error.value = null
     }
 }

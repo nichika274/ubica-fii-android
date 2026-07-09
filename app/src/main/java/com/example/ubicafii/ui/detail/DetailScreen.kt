@@ -81,19 +81,16 @@ fun DetailScreen(
         // Imagen Principal (Hero Image)
         Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
 
-            // 1. Intentar buscar si la foto ya se guardó localmente en el dispositivo
             val cachedFile = remember(esp.fotoUrl) {
                 if (esp.fotoUrl.isNotBlank()) ImageCache.getCachedFile(context, esp.fotoUrl.hashCode().toString()) else null
             }
 
-            // 2. Tu modelo de carga original intacto (Usa el archivo local si existe, si no, va a Render)
             val imageModel = when {
                 cachedFile != null -> cachedFile
                 esp.fotoUrl.startsWith("/") || esp.fotoUrl.contains("filesDir") -> File(esp.fotoUrl)
                 else -> esp.fotoUrl.ifEmpty { "https://via.placeholder.com/400?text=${esp.nombre}" }
             }
 
-            // 3. Descarga silenciosa en segundo plano. Al cargarse de Render por primera vez, se guarda en el cel.
             LaunchedEffect(esp.fotoUrl) {
                 if (esp.fotoUrl.isNotBlank() && cachedFile == null && esp.fotoUrl.startsWith("http")) {
                     ImageCache.cacheImage(
@@ -165,11 +162,15 @@ fun DetailScreen(
                     IconButton(
                         onClick = {
                             copiado = true
+                            // URL única basada en Render para asegurar el App Link
+                            val appLink = "https://ubicafii-backend.onrender.com/open?id=${esp.id}"
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(
                                     Intent.EXTRA_TEXT,
-                                    "Mira este espacio en UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n\nAbrir en la App: ubicafii://espacio?id=${esp.id}"
+                                    "📍 ${esp.nombre} - Bloque ${esp.bloque}\n" +
+                                            "🏢 ${getFloorLabel(esp.piso.toString())} · ${esp.indicaciones}\n\n" +
+                                            "🔗 Abrir en UbicaFII:\n$appLink"
                                 )
                                 type = "text/plain"
                             }
@@ -303,7 +304,6 @@ fun DetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // BOTÓN "VER PLANO" DENTRO DE LA TARJETA
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = { showPlanoDialog = true },
@@ -319,18 +319,21 @@ fun DetailScreen(
                 }
             }
 
-            // Botones inferiores de Acción
+            // 🛠️ BOTONES INFERIORES UNIFICADOS CON DISEÑO SÓLIDO (Mismo estilo en Light/Dark Mode)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
                     onClick = {
+                        val appLink = "https://ubicafii-backend.onrender.com/open?id=${esp.id}"
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "UbicaFII: ${esp.nombre} - Bloque ${esp.bloque}\n${getFloorLabel(esp.piso.toString())} · ${esp.indicaciones}\n\nUbicación exacta: ubicafii://espacio?id=${esp.id}"
+                                "📍 ${esp.nombre} - Bloque ${esp.bloque}\n" +
+                                        "🏢 ${getFloorLabel(esp.piso.toString())} · ${esp.indicaciones}\n\n" +
+                                        "🔗 Abrir en UbicaFII:\n$appLink"
                             )
                             type = "text/plain"
                         }
@@ -340,11 +343,14 @@ fun DetailScreen(
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                    Icon(Icons.Default.Share, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Compartir", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                    Text("Compartir", fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -353,12 +359,14 @@ fun DetailScreen(
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Public, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Ver en mapa", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("Ver en mapa", fontWeight = FontWeight.Bold)
                 }
             }
         }

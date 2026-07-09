@@ -2,6 +2,7 @@ package com.example.ubicafii.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log // 🛠️ LOGS DE NAVEGACIÓN
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -12,6 +13,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -38,6 +40,8 @@ import com.example.ubicafii.ui.search.SearchScreen
 import com.example.ubicafii.ui.splash.SplashScreen
 import com.example.ubicafii.ui.theme.home.HomeViewModel
 import com.example.ubicafii.ui.theme.UbicaFIITheme
+import com.example.ubicafii.data.api.RetrofitClient
+import com.example.ubicafii.data.repository.MapDataRepository
 import com.example.ubicafii.util.PreferencesManager
 import com.example.ubicafii.util.programarSincronizacion
 import kotlinx.coroutines.launch
@@ -47,32 +51,63 @@ class MainActivity : ComponentActivity() {
     private val homeViewModel: HomeViewModel by viewModels()
     private var deepLinkEspacioId: Int? = null
 
+    // 🛠️ Estado mutable para controlar los intents entrantes en caliente (onNewIntent)
+    private var currentIntentState by mutableStateOf<Intent?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔥 PASO NUEVO: Inicializar WorkManager en segundo plano de forma segura
         programarSincronizacion(this)
 
+        // 🛠️ Captura inicial en frío + Limpieza inmediata del Intent para evitar ejecuciones fantasmas en recreaciones
         intent?.data?.getQueryParameter("id")?.toIntOrNull()?.let {
             deepLinkEspacioId = it
+            intent.data = null
         }
+        currentIntentState = intent
 
-        // Leer la preferencia guardada antes de definir el estado del tema
         val savedDarkMode = PreferencesManager.isDarkMode(this)
 
         setContent {
-            // RECUPERADO: Estado del tema persistente inicializado con el valor guardado
             var isDarkTheme by rememberSaveable { mutableStateOf(savedDarkMode) }
 
             UbicaFIITheme(darkTheme = isDarkTheme) {
                 val navController = rememberNavController()
 
-                // Escuchar deep links en caliente
-                LaunchedEffect(intent) {
-                    intent?.data?.getQueryParameter("id")?.toIntOrNull()?.let { id ->
-                        navController.navigate("detail/$id") {
-                            launchSingleTop = true
+                // PRE-CARGA OFFLINE-FIRST: Sincronización silenciosa al arrancar la app
+                LaunchedEffect(Unit) {
+                    launch(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            Log.d("MainActivity", "Iniciando pre-carga silenciosa del mapa...")
+                            val mapRepo = MapDataRepository(this@MainActivity)
+                            val apiService = RetrofitClient.instance
+
+                            val bloquesOk = mapRepo.fetchAndCacheBloques(apiService)
+                            val puntosOk = mapRepo.fetchAndCachePuntosInteres(apiService)
+
+                            Log.d("MainActivity", "Pre-carga completada. Bloques: $bloquesOk, Puntos: $puntosOk")
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error en la sincronización inicial del mapa", e)
                         }
+                    }
+                }
+
+                // 🛠️ Escucha activa en caliente + Limpieza profunda del Intent de la Activity
+                LaunchedEffect(currentIntentState) {
+                    currentIntentState?.data?.getQueryParameter("id")?.toIntOrNull()?.let { id ->
+                        Log.d("MainActivity", "Deep link en caliente detectado: evaluando ID $id")
+
+                        if (navController.currentDestination?.route != "detail/$id") {
+                            Log.d("MainActivity", "Navegando a detalle desde Intent caliente")
+                            navController.navigate("detail/$id") {
+                                launchSingleTop = true
+                            }
+                        }
+
+                        // Limpieza a nivel de estado de Compose y a nivel de Activity de Android
+                        currentIntentState = null
+                        intent?.data = null
+                        setIntent(Intent())
                     }
                 }
 
@@ -80,36 +115,35 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     startDestination = "splash",
                     modifier = Modifier,
-                    enterTransition = {
-                        slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn(tween(400))
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(400)) + fadeOut(tween(400))
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(400)) + fadeIn(tween(400))
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut(tween(400))
-                    }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn(tween(400)) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(400)) + fadeOut(tween(400)) },
+                    popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(400)) + fadeIn(tween(400)) },
+                    popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut(tween(400)) }
                 ) {
+                    // El Splash únicamente limpia la pila y redirige a Main
                     composable("splash") {
                         SplashScreen {
-                            val destinoId = deepLinkEspacioId
-                            if (destinoId != null) {
-                                deepLinkEspacioId = null
-                                navController.navigate("detail/$destinoId") {
-                                    popUpTo("splash") { inclusive = true }
-                                }
-                            } else {
-                                navController.navigate("main") {
-                                    popUpTo("splash") { inclusive = true }
-                                }
+                            navController.navigate("main") {
+                                popUpTo("splash") { inclusive = true }
                             }
                         }
                     }
 
+                    // El Main procesa el Deep Link en frío tras ser montado en el Backstack
                     composable("main") {
+                        Log.d("NavHost", "Navegando a main")
+
+                        LaunchedEffect(Unit) {
+                            deepLinkEspacioId?.let { id ->
+                                Log.d("NavHost", "Procesando deep link en frío diferido para ID: $id")
+                                deepLinkEspacioId = null
+                                navController.navigate("detail/$id") {
+                                    launchSingleTop = true
+                                    restoreState = false // 🛠️ Evitamos restaurar estados previos inconsistentes para este destino
+                                }
+                            }
+                        }
+
                         MainScreenWithPager(
                             homeViewModel = homeViewModel,
                             isDarkTheme = isDarkTheme,
@@ -117,8 +151,12 @@ class MainActivity : ComponentActivity() {
                                 isDarkTheme = !isDarkTheme
                                 PreferencesManager.setDarkMode(this@MainActivity, isDarkTheme)
                             },
-                            navigateToDetail = { id: Int -> navController.navigate("detail/${id.toString()}") },
-                            navigateToBlock = { bloqueId -> navController.navigate("floors/$bloqueId") },
+                            navigateToDetail = { id: Int ->
+                                navController.navigate("detail/$id") { launchSingleTop = true }
+                            },
+                            navigateToBlock = { bloqueId ->
+                                navController.navigate("floors/$bloqueId") { launchSingleTop = true }
+                            },
                             navigateToAdmin = { navController.navigate("admin") }
                         )
                     }
@@ -128,9 +166,16 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("espacioId") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val espacioId = backStackEntry.arguments?.getString("espacioId")?.toIntOrNull() ?: 0
+                        Log.d("NavHost", "Navegando a detail con ID: $espacioId")
+
                         DetailScreen(
                             espacioId = espacioId,
-                            onBack = { navController.popBackStack() }
+                            onBack = {
+                                Log.d("DetailScreen", "onBack ejecutado: popBackStack()")
+                                if (navController.currentBackStackEntry?.lifecycle?.currentState?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true) {
+                                    navController.popBackStack()
+                                }
+                            }
                         )
                     }
 
@@ -139,10 +184,19 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("bloqueId") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val bloqueId = backStackEntry.arguments?.getString("bloqueId") ?: "A"
+                        Log.d("NavHost", "Navegando a floors con bloque: $bloqueId")
+
                         FloorsScreen(
                             bloqueId = bloqueId,
-                            onBack = { navController.popBackStack() },
-                            onSpaceClick = { id -> navController.navigate("detail/$id") }
+                            onBack = {
+                                Log.d("FloorsScreen", "onBack ejecutado: popBackStack()")
+                                if (navController.currentBackStackEntry?.lifecycle?.currentState?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true) {
+                                    navController.popBackStack()
+                                }
+                            },
+                            onSpaceClick = { id ->
+                                navController.navigate("detail/$id") { launchSingleTop = true }
+                            }
                         )
                     }
 
@@ -157,6 +211,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        // Actualizamos nuestro estado observable para que el LaunchedEffect de Compose se ejecute de inmediato
+        currentIntentState = intent
     }
 }
 
@@ -170,36 +226,46 @@ fun MainScreenWithPager(
     navigateToBlock: (String) -> Unit,
     navigateToAdmin: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    var currentPage by rememberSaveable { mutableStateOf(0) }
+
+    val pagerState = rememberPagerState(
+        initialPage = currentPage,
+        pageCount = { 4 }
+    )
     val coroutineScope = rememberCoroutineScope()
 
-    val selectedTab by remember { derivedStateOf { pagerState.currentPage } }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            currentPage = page
+        }
+    }
 
     Scaffold(
+        modifier = Modifier.systemBarsPadding(),
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
                     label = { Text("Inicio") },
-                    selected = selectedTab == 0,
+                    selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } }
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                     label = { Text("Buscar") },
-                    selected = selectedTab == 1,
+                    selected = pagerState.currentPage == 1,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } }
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Explore, contentDescription = "Explorar") },
                     label = { Text("Explorar") },
-                    selected = selectedTab == 2,
+                    selected = pagerState.currentPage == 2,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
                     label = { Text("Perfil") },
-                    selected = selectedTab == 3,
+                    selected = pagerState.currentPage == 3,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(3) } }
                 )
             }
@@ -210,6 +276,8 @@ fun MainScreenWithPager(
             modifier = Modifier.padding(innerPadding),
             beyondViewportPageCount = 1
         ) { page ->
+            Log.d("MainScreen", "Renderizando página: $page")
+
             when (page) {
                 0 -> HomeScreen(
                     viewModel = homeViewModel,

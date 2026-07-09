@@ -152,7 +152,7 @@ fun ProfileScreen(
                 }
             }
 
-            item { ProfileOptionCard(Icons.Default.Info, "Acerca de", "UbicaFII v2.6") { Toast.makeText(context, "Facultad de Ingeniería Industrial", Toast.LENGTH_SHORT).show() } }
+            item { ProfileOptionCard(Icons.Default.Info, "Acerca de", "UbicaFII v2.8") { Toast.makeText(context, "Facultad de Ingeniería Industrial", Toast.LENGTH_SHORT).show() } }
 
             // Separador y acceso a Admin
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }

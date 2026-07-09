@@ -19,6 +19,7 @@ app.use('/api/espacios', require('./routes/espacios'));
 app.use('/api/bloques', require('./routes/bloques'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/puntos-interes', require('./routes/puntosInteres'));
+app.use('/open', require('./routes/open'));
 
 // Inicialización del servidor
 app.listen(PORT, '0.0.0.0', () => {
